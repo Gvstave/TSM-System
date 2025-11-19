@@ -1,22 +1,9 @@
 'use client';
 
 import { useAuth } from '@/context/auth-context';
-import dynamic from 'next/dynamic';
+import { LecturerDashboard } from '@/components/dashboard/lecturer-dashboard';
+import { StudentDashboard } from '@/components/dashboard/student-dashboard';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const LecturerDashboard = dynamic(
-  () => import('@/components/dashboard/lecturer-dashboard').then((mod) => mod.LecturerDashboard),
-  {
-    loading: () => <DashboardLoadingSkeleton />,
-  }
-);
-
-const StudentDashboard = dynamic(
-  () => import('@/components/dashboard/student-dashboard').then((mod) => mod.StudentDashboard),
-  {
-    loading: () => <DashboardLoadingSkeleton />,
-  }
-);
 
 export default function DashboardPage() {
   const { user } = useAuth();

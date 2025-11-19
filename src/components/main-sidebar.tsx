@@ -9,11 +9,14 @@ import {
   SidebarMenuButton,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard } from 'lucide-react';
+import { LayoutDashboard, Info } from 'lucide-react';
 import { UserNav } from './user-nav';
 import { Logo } from './logo';
+import { usePathname } from 'next/navigation';
 
 export function MainSidebar() {
+  const pathname = usePathname();
+
   return (
     <Sidebar>
       <SidebarHeader>
@@ -22,9 +25,15 @@ export function MainSidebar() {
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton href="/dashboard" isActive>
+            <SidebarMenuButton href="/dashboard" isActive={pathname.startsWith('/dashboard')}>
               <LayoutDashboard />
               Dashboard
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton href="/about" isActive={pathname.startsWith('/about')}>
+              <Info />
+              About
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
