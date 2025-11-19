@@ -5,20 +5,14 @@ import dynamic from 'next/dynamic';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const LecturerDashboard = dynamic(
-  () =>
-    import('@/components/dashboard/lecturer-dashboard').then(
-      (mod) => mod.LecturerDashboard
-    ),
+  () => import('@/components/dashboard/lecturer-dashboard').then((mod) => mod.LecturerDashboard),
   {
     loading: () => <DashboardLoadingSkeleton />,
   }
 );
 
 const StudentDashboard = dynamic(
-  () =>
-    import('@/components/dashboard/student-dashboard').then(
-      (mod) => mod.StudentDashboard
-    ),
+  () => import('@/components/dashboard/student-dashboard').then((mod) => mod.StudentDashboard),
   {
     loading: () => <DashboardLoadingSkeleton />,
   }
@@ -29,14 +23,14 @@ export default function DashboardPage() {
 
   if (!user) {
     return (
-      <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
         <DashboardLoadingSkeleton />
       </div>
     );
   }
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+    <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       {user.role === 'lecturer' ? (
         <LecturerDashboard currentUser={user} />
       ) : (
@@ -49,12 +43,12 @@ export default function DashboardPage() {
 function DashboardLoadingSkeleton() {
   return (
     <div className="space-y-4">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      <div className="flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
         <div className="space-y-2">
           <Skeleton className="h-9 w-64" />
           <Skeleton className="h-5 w-80" />
         </div>
-        <div className="flex w-full md:w-auto items-center space-x-2">
+        <div className="flex w-full items-center space-x-2 md:w-auto">
           <Skeleton className="h-10 w-full md:w-36" />
           <Skeleton className="h-10 w-full md:w-40" />
         </div>
