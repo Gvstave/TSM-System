@@ -6,7 +6,6 @@ import {
   query,
   where,
   onSnapshot,
-  getDocs,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Project, User } from '@/lib/types';
@@ -26,7 +25,7 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser?.uid) return;
 
     const q = query(
       collection(db, 'projects'),
@@ -50,21 +49,18 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
         setLoading(false);
       }
     );
+    
+    // Fetch all student users to resolve names in the project card
+    const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
+    const unsubscribeStudents = onSnapshot(studentsQuery, (snapshot) => {
+      const fetchedStudents = snapshot.docs.map(doc => doc.data() as User);
+      setStudents(fetchedStudents);
+    });
 
-    // Fetch all users to display names correctly. In a real-world scenario with many users,
-    // this would be optimized, but it's okay for this smaller-scale app.
-    const fetchStudents = async () => {
-      const studentsQuery = query(
-        collection(db, 'users'),
-        where('role', '==', 'student')
-      );
-      const studentsSnapshot = await getDocs(studentsQuery);
-      setStudents(studentsSnapshot.docs.map((doc) => doc.data() as User));
+    return () => {
+      unsubscribeProjects();
+      unsubscribeStudents();
     };
-
-    fetchStudents();
-
-    return () => unsubscribeProjects();
   }, [currentUser]);
 
   const renderProjectList = (filteredProjects: Project[]) => {

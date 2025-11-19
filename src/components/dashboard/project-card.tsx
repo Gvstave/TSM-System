@@ -40,7 +40,7 @@ import {
 interface ProjectCardProps {
   project: Project;
   userRole: 'lecturer' | 'student';
-  students?: User[]; // Make students optional, but provide it for lecturers
+  students?: User[];
 }
 
 const statusConfig: Record<
@@ -92,7 +92,8 @@ export function ProjectCard({ project, userRole, students = [] }: ProjectCardPro
           return foundStudent ? foundStudent.name : 'Unknown';
         })
         .join(', ')
-    : '';
+    : 'No students assigned';
+
 
   const cardContent = (
      <Card className={cn('flex h-full flex-col transition-all', cardBorderColor, 'cursor-pointer hover:shadow-md')}>
