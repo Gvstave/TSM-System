@@ -29,13 +29,6 @@ import {
   DialogTrigger,
 } from '../ui/dialog';
 import { Button } from '../ui/button';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-
 
 interface ProjectCardProps {
   project: Project;
@@ -88,6 +81,7 @@ export function ProjectCard({ project, userRole, students = [] }: ProjectCardPro
   const assignedToNames = Array.isArray(project.assignedTo)
     ? project.assignedTo
         .map(studentId => {
+          // Find the student in the `students` array passed as a prop.
           const foundStudent = students.find(s => s.uid === studentId);
           return foundStudent ? foundStudent.name : 'Unknown';
         })

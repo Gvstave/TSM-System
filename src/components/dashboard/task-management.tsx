@@ -9,7 +9,7 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
 import type { Project, Task, TaskStatus } from '@/lib/types';
-import { createTask, updateTaskStatus } from '@/lib/actions';
+import { createTask, updateTaskStatus, updateProjectStatus } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -27,10 +27,12 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Loader2, Circle, CircleDot, CircleCheck } from 'lucide-react';
+import { Plus, Loader2, Circle, CircleDot, CircleCheck, Send } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
+import { DialogFooter } from '../ui/dialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 
 const taskSchema = z.object({
   title: z.string().min(3, 'Task title must be at least 3 characters.'),
@@ -57,6 +59,8 @@ export function TaskManagement({ project, readOnly }: TaskManagementProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
 
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
@@ -110,6 +114,27 @@ export function TaskManagement({ project, readOnly }: TaskManagementProps) {
     }
     setIsUpdating(null);
   };
+  
+  const handleProjectSubmit = async () => {
+    if (!user || readOnly) return;
+    setIsSubmitting(true);
+    const result = await updateProjectStatus(project.id, 'Completed', user.uid);
+     if (result.success) {
+      toast({
+        title: 'Project Submitted!',
+        description: 'Your project has been marked as completed and sent for review.',
+      });
+    } else {
+      toast({
+        variant: 'destructive',
+        title: 'Submission Failed',
+        description: result.error,
+      });
+    }
+    setIsSubmitting(false);
+  }
+
+  const allTasksCompleted = tasks.length > 0 && tasks.every(t => t.status === 'Completed');
 
   return (
     <div className="space-y-4">
@@ -188,6 +213,39 @@ export function TaskManagement({ project, readOnly }: TaskManagementProps) {
           </p>
         )}
       </div>
+
+       {!readOnly && project.status !== 'Completed' && (
+        <>
+            <Separator />
+            <DialogFooter className="pt-4">
+                 <TooltipProvider>
+                    <Tooltip delayDuration={0}>
+                        <TooltipTrigger asChild>
+                            <div tabIndex={0} className={cn(!allTasksCompleted ? 'cursor-not-allowed' : '')}>
+                                <Button
+                                    onClick={handleProjectSubmit}
+                                    disabled={!allTasksCompleted || isSubmitting}
+                                    className="w-full md:w-auto"
+                                >
+                                    {isSubmitting ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Send className="mr-2 h-4 w-4" />
+                                    )}
+                                    Submit Project
+                                </Button>
+                             </div>
+                        </TooltipTrigger>
+                        {!allTasksCompleted && (
+                            <TooltipContent>
+                                <p>All tasks must be completed before you can submit.</p>
+                            </TooltipContent>
+                        )}
+                    </Tooltip>
+                </TooltipProvider>
+            </DialogFooter>
+        </>
+      )}
     </div>
   );
 }
