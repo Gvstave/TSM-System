@@ -87,22 +87,20 @@ export function ProjectCard({ project, userRole, students = [] }: ProjectCardPro
   
   const assignedToNames = Array.isArray(project.assignedTo)
     ? project.assignedTo
-        .map(studentRef => {
-          // studentRef can be a string (uid) or an object {id, name}
-          const studentId = typeof studentRef === 'string' ? studentRef : studentRef.id;
+        .map(studentId => {
           const foundStudent = students.find(s => s.uid === studentId);
-          return foundStudent ? foundStudent.name : (studentRef as any).name || 'Unknown';
+          return foundStudent ? foundStudent.name : 'Unknown';
         })
         .join(', ')
     : '';
 
   const cardContent = (
-     <Card className={cn('flex flex-col transition-all h-full', cardBorderColor, 'cursor-pointer hover:shadow-md')}>
+     <Card className={cn('flex h-full flex-col transition-all', cardBorderColor, 'cursor-pointer hover:shadow-md')}>
         <CardHeader>
             <CardTitle className="font-headline text-lg tracking-tight line-clamp-2">
             {project.title}
             </CardTitle>
-            <CardDescription className="line-clamp-3 h-[60px]">
+            <CardDescription className="h-[60px] line-clamp-3">
             {project.description}
             </CardDescription>
         </CardHeader>

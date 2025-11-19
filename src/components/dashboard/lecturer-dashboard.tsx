@@ -57,7 +57,7 @@ export function LecturerDashboard({ currentUser }: LecturerDashboardProps) {
     }
     if (filteredProjects.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center h-64">
+        <div className="flex h-64 flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
           <h3 className="text-lg font-semibold text-muted-foreground">No projects here yet.</h3>
           <p className="text-sm text-muted-foreground/80">Create a new project to get started.</p>
         </div>

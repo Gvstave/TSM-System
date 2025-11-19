@@ -77,7 +77,7 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
     }
     if (filteredProjects.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center h-64">
+        <div className="flex h-64 flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
           <h3 className="text-lg font-semibold text-muted-foreground">
             You have no projects.
           </h3>
