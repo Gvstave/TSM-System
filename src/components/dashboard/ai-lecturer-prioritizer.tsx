@@ -11,12 +11,14 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Sparkles, Wand2 } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 import type { Task, User } from '@/lib/types';
 import { prioritizeTasksForLecturer } from '@/ai/flows/task-prioritization-for-lecturers';
 import type { TaskPrioritizationForLecturerOutput } from '@/ai/flows/task-prioritization-for-lecturers';
 import { Badge } from '../ui/badge';
 import { ScrollArea } from '../ui/scroll-area';
+import { Timestamp } from 'firebase/firestore';
+import { cn } from '@/lib/utils';
 
 interface AiLecturerPrioritizerProps {
   tasks: Task[];
@@ -28,6 +30,17 @@ const priorityColors: { [key: string]: string } = {
     Medium: 'bg-primary/20 text-primary-foreground border-primary/50',
     Low: 'bg-secondary text-secondary-foreground',
 }
+
+const getDeadlineAsDate = (deadline: Task['deadline']): Date => {
+  if (deadline instanceof Timestamp) {
+    return deadline.toDate();
+  }
+  if (deadline && typeof deadline.seconds === 'number') {
+    return new Timestamp(deadline.seconds, deadline.nanoseconds).toDate();
+  }
+  return new Date();
+};
+
 
 export function AiLecturerPrioritizer({ tasks, students }: AiLecturerPrioritizerProps) {
   const [open, setOpen] = useState(false);
@@ -61,7 +74,7 @@ export function AiLecturerPrioritizer({ tasks, students }: AiLecturerPrioritizer
           taskId: t.id,
           title: t.title,
           description: t.description,
-          deadline: t.deadline.toDate().toISOString().split('T')[0],
+          deadline: getDeadlineAsDate(t.deadline).toISOString().split('T')[0],
           studentId: t.assignedTo,
         })),
         studentWorkloads,

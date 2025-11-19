@@ -17,10 +17,22 @@ import { Loader2, Sparkles, Wand2 } from 'lucide-react';
 import type { Task } from '@/lib/types';
 import { prioritizeTasksForStudent } from '@/ai/flows/task-prioritization-for-students';
 import type { PrioritizeTasksForStudentOutput } from '@/ai/flows/task-prioritization-for-students';
+import { Timestamp } from 'firebase/firestore';
 
 interface AiStudentPrioritizerProps {
   tasks: Task[];
 }
+
+const getDeadlineAsDate = (deadline: Task['deadline']): Date => {
+  if (deadline instanceof Timestamp) {
+    return deadline.toDate();
+  }
+  if (deadline && typeof deadline.seconds === 'number') {
+    return new Timestamp(deadline.seconds, deadline.nanoseconds).toDate();
+  }
+  return new Date();
+};
+
 
 export function AiStudentPrioritizer({ tasks }: AiStudentPrioritizerProps) {
   const [open, setOpen] = useState(false);
@@ -47,7 +59,7 @@ export function AiStudentPrioritizer({ tasks }: AiStudentPrioritizerProps) {
 
       const input = {
         taskDescriptions: activeTasks.map(t => t.title),
-        deadlines: activeTasks.map(t => t.deadline.toDate().toISOString()),
+        deadlines: activeTasks.map(t => getDeadlineAsDate(t.deadline).toISOString()),
         studentWorkload: workload || 'No additional workload specified.',
       };
 

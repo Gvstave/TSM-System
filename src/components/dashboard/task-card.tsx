@@ -31,6 +31,7 @@ import { format, differenceInDays } from 'date-fns';
 import { useAuth } from '@/context/auth-context';
 import { updateTaskStatus } from '@/lib/actions';
 import { useState } from 'react';
+import { Timestamp } from 'firebase/firestore';
 
 interface TaskCardProps {
   task: Task;
@@ -51,7 +52,20 @@ export function TaskCard({ task, userRole }: TaskCardProps) {
   const { toast } = useToast();
   const [isUpdating, setIsUpdating] = useState(false);
 
-  const deadlineDate = task.deadline.toDate();
+  // The deadline can be a Timestamp or a serialized object with seconds and nanoseconds
+  const getDeadlineDate = (deadline: Task['deadline']): Date => {
+    if (deadline instanceof Timestamp) {
+      return deadline.toDate();
+    }
+    // If it's serialized, it will be an object with seconds and nanoseconds
+    if (deadline && typeof deadline.seconds === 'number') {
+      return new Timestamp(deadline.seconds, deadline.nanoseconds).toDate();
+    }
+    // Fallback for unexpected formats, though this shouldn't happen
+    return new Date();
+  };
+
+  const deadlineDate = getDeadlineDate(task.deadline);
   const daysUntilDeadline = differenceInDays(deadlineDate, new Date());
 
   let deadlineColor = 'text-muted-foreground';
