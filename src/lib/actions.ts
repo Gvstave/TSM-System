@@ -15,14 +15,14 @@ import type { Project, Task, ProjectStatus, AssignedStudent } from './types';
 type ProjectInput = Omit<
   Project,
   'id' | 'status' | 'createdAt' | 'updatedAt'
-> & {
-  assignedTo: AssignedStudent[];
-};
+>;
 
 export async function createProject(projectInput: ProjectInput) {
   try {
+    const { assignedTo, ...restOfProject } = projectInput;
     await addDoc(collection(db, 'projects'), {
-      ...projectInput,
+      ...restOfProject,
+      assignedTo,
       status: 'Pending',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
