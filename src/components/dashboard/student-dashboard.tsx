@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Project, User } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -16,15 +16,17 @@ interface StudentDashboardProps {
 
 export function StudentDashboard({ currentUser }: StudentDashboardProps) {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [students, setStudents] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!currentUser) return;
+    
     const q = query(
       collection(db, 'projects'),
       where('assignedTo', 'array-contains', currentUser.uid)
     );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribeProjects = onSnapshot(q, (snapshot) => {
       const fetchedProjects = snapshot.docs.map(
         (doc) => ({ id: doc.id, ...doc.data() } as Project)
       );
@@ -35,7 +37,17 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    // Fetch all users to display names correctly. In a real-world scenario with many users,
+    // this would be optimized, but it's okay for this smaller-scale app.
+    const fetchStudents = async () => {
+      const studentsQuery = query(collection(db, 'users'), where('role', '==', 'student'));
+      const studentsSnapshot = await getDocs(studentsQuery);
+      setStudents(studentsSnapshot.docs.map(doc => doc.data() as User));
+    };
+
+    fetchStudents();
+
+    return () => unsubscribeProjects();
   }, [currentUser]);
 
   const renderProjectList = (filteredProjects: Project[]) => {
@@ -53,7 +65,7 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
     return (
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filteredProjects.map((project) => (
-          <ProjectCard key={project.id} project={project} userRole="student" />
+          <ProjectCard key={project.id} project={project} userRole="student" students={students}/>
         ))}
       </div>
     );
