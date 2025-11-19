@@ -8,7 +8,7 @@ import {
   signInWithEmailAndPassword,
 } from 'firebase/auth';
 import { collection, doc, getDocs, query, setDoc, where } from 'firebase/firestore';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
@@ -76,6 +76,8 @@ type AuthFormProps = {
 
 export function AuthForm({ type }: AuthFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect') || '/dashboard';
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [lecturers, setLecturers] = useState<User[]>([]);
@@ -110,7 +112,7 @@ export function AuthForm({ type }: AuthFormProps) {
       if (isLogin) {
         const { email, password } = values as z.infer<typeof loginSchema>;
         await signInWithEmailAndPassword(auth, email, password);
-        router.replace('/dashboard');
+        router.replace(redirectUrl);
       } else {
         const { name, email, password, role, lecturerId } = values as z.infer<
           typeof signupSchema

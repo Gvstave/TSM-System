@@ -9,7 +9,7 @@ import {
   SidebarMenuButton,
   SidebarFooter,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Info } from 'lucide-react';
+import { LayoutDashboard } from 'lucide-react';
 import { UserNav } from './user-nav';
 import { Logo } from './logo';
 import { usePathname } from 'next/navigation';
@@ -28,12 +28,6 @@ export function MainSidebar() {
             <SidebarMenuButton href="/dashboard" isActive={pathname.startsWith('/dashboard')}>
               <LayoutDashboard />
               Dashboard
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton href="/about" isActive={pathname.startsWith('/about')}>
-              <Info />
-              About
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
