@@ -6,7 +6,7 @@ import {
     CardHeader,
     CardTitle,
   } from '@/components/ui/card';
-import { Users, BookOpenCheck } from 'lucide-react';
+import { Users, BookOpenCheck, Info } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LandingPage() {
@@ -85,6 +85,26 @@ export default function LandingPage() {
                 </Card>
                 </div>
             </div>
+        </section>
+        <section className="w-full py-12 md:py-24 lg:py-32">
+          <div className="container grid items-center justify-center gap-4 px-4 text-center md:px-6">
+            <div className="space-y-3">
+              <h2 className="text-3xl font-bold tracking-tighter md:text-4xl/tight font-headline">
+                Ready to streamline your academic workflow?
+              </h2>
+              <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                Sign up today and take control of your projects.
+              </p>
+            </div>
+            <div className="flex justify-center space-x-4">
+              <Button asChild>
+                <Link href="/login">Sign In</Link>
+              </Button>
+              <Button asChild variant="secondary">
+                <Link href="/signup">Sign Up</Link>
+              </Button>
+            </div>
+          </div>
         </section>
     </>
   );
