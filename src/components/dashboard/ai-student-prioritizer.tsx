@@ -14,16 +14,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles, Wand2 } from 'lucide-react';
-import type { Task } from '@/lib/types';
+import type { Project } from '@/lib/types';
 import { prioritizeTasksForStudent } from '@/ai/flows/task-prioritization-for-students';
 import type { PrioritizeTasksForStudentOutput } from '@/ai/flows/task-prioritization-for-students';
 import { Timestamp } from 'firebase/firestore';
 
 interface AiStudentPrioritizerProps {
-  tasks: Task[];
+  projects: Project[];
 }
 
-const getDeadlineAsDate = (deadline: Task['deadline']): Date => {
+const getDeadlineAsDate = (deadline: Project['deadline']): Date => {
   if (deadline instanceof Timestamp) {
     return deadline.toDate();
   }
@@ -34,7 +34,7 @@ const getDeadlineAsDate = (deadline: Task['deadline']): Date => {
 };
 
 
-export function AiStudentPrioritizer({ tasks }: AiStudentPrioritizerProps) {
+export function AiStudentPrioritizer({ projects: tasks }: AiStudentPrioritizerProps) {
   const [open, setOpen] = useState(false);
   const [workload, setWorkload] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -50,8 +50,8 @@ export function AiStudentPrioritizer({ tasks }: AiStudentPrioritizerProps) {
       const activeTasks = tasks.filter((t) => t.status !== 'Completed');
       if (activeTasks.length === 0) {
         toast({
-            title: "No active tasks",
-            description: "There are no tasks to prioritize.",
+            title: "No active projects",
+            description: "There are no projects to prioritize.",
         });
         setIsLoading(false);
         return;
@@ -87,10 +87,10 @@ export function AiStudentPrioritizer({ tasks }: AiStudentPrioritizerProps) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-headline flex items-center gap-2">
-            <Sparkles className="text-primary" /> AI Task Prioritizer
+            <Sparkles className="text-primary" /> AI Project Prioritizer
           </DialogTitle>
           <DialogDescription>
-            Let AI help you organize your tasks based on urgency and your current workload.
+            Let AI help you organize your projects based on urgency and your current workload.
           </DialogDescription>
         </DialogHeader>
         {!result ? (

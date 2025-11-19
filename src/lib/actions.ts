@@ -8,11 +8,12 @@ import {
   doc,
   serverTimestamp,
   updateDoc,
+  getDoc
 } from 'firebase/firestore';
-import type { Task, User } from './types';
+import type { Project, Task, ProjectStatus } from './types';
 
-type TaskInput = Omit<
-  Task,
+type ProjectInput = Omit<
+  Project,
   'id' | 'status' | 'createdAt' | 'updatedAt' | 'assignedToName'
 > & {
   assignedStudent: {
@@ -21,10 +22,10 @@ type TaskInput = Omit<
   };
 };
 
-export async function createTask(taskInput: TaskInput) {
+export async function createProject(projectInput: ProjectInput) {
   try {
-    const { assignedStudent, ...rest } = taskInput;
-    await addDoc(collection(db, 'tasks'), {
+    const { assignedStudent, ...rest } = projectInput;
+    await addDoc(collection(db, 'projects'), {
       ...rest,
       assignedTo: assignedStudent.id,
       assignedToName: assignedStudent.name,
@@ -34,9 +35,9 @@ export async function createTask(taskInput: TaskInput) {
     });
 
     await addDoc(collection(db, 'activity_logs'), {
-      action: `Task "${taskInput.title}" created and assigned to ${assignedStudent.name}`,
+      action: `Project "${projectInput.title}" created and assigned to ${assignedStudent.name}`,
       timestamp: serverTimestamp(),
-      userId: taskInput.createdBy,
+      userId: projectInput.createdBy,
     });
 
     revalidatePath('/dashboard');
@@ -44,6 +45,51 @@ export async function createTask(taskInput: TaskInput) {
   } catch (error: any) {
     return { success: false, error: error.message };
   }
+}
+
+export async function updateProjectStatus(
+  projectId: string,
+  status: ProjectStatus,
+  userId: string
+) {
+  try {
+    const projectRef = doc(db, 'projects', projectId);
+    await updateDoc(projectRef, {
+      status,
+      updatedAt: serverTimestamp(),
+    });
+
+    const projectSnapshot = await getDoc(projectRef);
+    const projectTitle = projectSnapshot.data()?.title || 'a project';
+
+    await addDoc(collection(db, 'activity_logs'), {
+      projectId,
+      userId,
+      action: `Status of project "${projectTitle}" changed to ${status}`,
+      timestamp: serverTimestamp(),
+    });
+
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+
+export async function createTask(taskInput: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) {
+    try {
+        await addDoc(collection(db, 'tasks'), {
+            ...taskInput,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+        });
+
+        revalidatePath('/dashboard');
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
 }
 
 export async function updateTaskStatus(
@@ -58,9 +104,7 @@ export async function updateTaskStatus(
       updatedAt: serverTimestamp(),
     });
 
-    const taskSnapshot = await (
-      await import('firebase/firestore')
-    ).getDoc(taskRef);
+    const taskSnapshot = await getDoc(taskRef);
     const taskTitle = taskSnapshot.data()?.title || 'a task';
 
     await addDoc(collection(db, 'activity_logs'), {
@@ -70,7 +114,7 @@ export async function updateTaskStatus(
       timestamp: serverTimestamp(),
     });
 
-    revalidatePath('/dashboard');
+    revalidatePath('/dashboard'); // May need to revalidate a more specific path
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

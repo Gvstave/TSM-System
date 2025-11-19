@@ -12,7 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Sparkles } from 'lucide-react';
-import type { Task, User } from '@/lib/types';
+import type { Project, User } from '@/lib/types';
 import { prioritizeTasksForLecturer } from '@/ai/flows/task-prioritization-for-lecturers';
 import type { TaskPrioritizationForLecturerOutput } from '@/ai/flows/task-prioritization-for-lecturers';
 import { Badge } from '../ui/badge';
@@ -21,7 +21,7 @@ import { Timestamp } from 'firebase/firestore';
 import { cn } from '@/lib/utils';
 
 interface AiLecturerPrioritizerProps {
-  tasks: Task[];
+  projects: Project[];
   students: User[];
 }
 
@@ -31,7 +31,7 @@ const priorityColors: { [key: string]: string } = {
     Low: 'bg-secondary text-secondary-foreground',
 }
 
-const getDeadlineAsDate = (deadline: Task['deadline']): Date => {
+const getDeadlineAsDate = (deadline: Project['deadline']): Date => {
   if (deadline instanceof Timestamp) {
     return deadline.toDate();
   }
@@ -42,7 +42,7 @@ const getDeadlineAsDate = (deadline: Task['deadline']): Date => {
 };
 
 
-export function AiLecturerPrioritizer({ tasks, students }: AiLecturerPrioritizerProps) {
+export function AiLecturerPrioritizer({ projects, students }: AiLecturerPrioritizerProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<TaskPrioritizationForLecturerOutput | null>(
@@ -54,11 +54,11 @@ export function AiLecturerPrioritizer({ tasks, students }: AiLecturerPrioritizer
     setIsLoading(true);
     setResult(null);
     try {
-      const activeTasks = tasks.filter((t) => t.status !== 'Completed');
-       if (activeTasks.length === 0) {
+      const activeProjects = projects.filter((t) => t.status !== 'Completed');
+       if (activeProjects.length === 0) {
         toast({
-            title: "No active tasks",
-            description: "There are no tasks to prioritize.",
+            title: "No active projects",
+            description: "There are no projects to prioritize.",
         });
         setIsLoading(false);
         return;
@@ -66,11 +66,11 @@ export function AiLecturerPrioritizer({ tasks, students }: AiLecturerPrioritizer
 
       const studentWorkloads = students.map(student => ({
         studentId: student.uid,
-        taskCount: tasks.filter(t => t.assignedTo === student.uid && t.status !== 'Completed').length,
+        taskCount: projects.filter(t => t.assignedTo === student.uid && t.status !== 'Completed').length,
       }));
 
       const input = {
-        tasks: activeTasks.map(t => ({
+        tasks: activeProjects.map(t => ({
           taskId: t.id,
           title: t.title,
           description: t.description,
@@ -93,7 +93,7 @@ export function AiLecturerPrioritizer({ tasks, students }: AiLecturerPrioritizer
     }
   };
 
-  const getTaskTitle = (taskId: string) => tasks.find(t => t.id === taskId)?.title || "Unknown Task";
+  const getProjectTitle = (taskId: string) => projects.find(t => t.id === taskId)?.title || "Unknown Project";
   const getStudentName = (studentId: string) => students.find(s => s.uid === studentId)?.name || "Unknown Student";
 
   return (
@@ -110,12 +110,12 @@ export function AiLecturerPrioritizer({ tasks, students }: AiLecturerPrioritizer
             <Sparkles className="text-primary" /> AI Prioritization Suggestions
           </DialogTitle>
           <DialogDescription>
-            Get AI-powered suggestions to help students prioritize their tasks.
+            Get AI-powered suggestions to help students prioritize their projects.
           </DialogDescription>
         </DialogHeader>
         {!result ? (
           <div className="flex flex-col items-center justify-center space-y-4 py-8">
-            <p className="text-center text-muted-foreground">Click the button below to generate task priority suggestions for all active students.</p>
+            <p className="text-center text-muted-foreground">Click the button below to generate project priority suggestions for all active students.</p>
             <Button onClick={handlePrioritize} disabled={isLoading} className="w-1/2">
               {isLoading && (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -130,7 +130,7 @@ export function AiLecturerPrioritizer({ tasks, students }: AiLecturerPrioritizer
                     <div key={index} className="mb-4 rounded-lg border p-4">
                         <div className="flex justify-between items-start">
                            <div>
-                             <h4 className="font-semibold">{getTaskTitle(suggestion.taskId)}</h4>
+                             <h4 className="font-semibold">{getProjectTitle(suggestion.taskId)}</h4>
                              <p className="text-sm text-muted-foreground">For: {getStudentName(suggestion.studentId)}</p>
                            </div>
                            <Badge className={cn(priorityColors[suggestion.priority] || 'bg-secondary')}>
