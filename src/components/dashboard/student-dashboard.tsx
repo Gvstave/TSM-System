@@ -22,7 +22,7 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
     if (!currentUser) return;
     const q = query(
       collection(db, 'projects'),
-      where('assignedTo', 'array-contains', {id: currentUser.uid, name: currentUser.name})
+      where('assignedTo.id', 'in', [currentUser.uid])
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedProjects = snapshot.docs.map(
