@@ -1,8 +1,9 @@
-import { initializeApp, getApps, getApp } from 'firebase/app';
+
+import { initializeApp, getApps, getApp, type FirebaseOptions } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-const firebaseConfig = {
+const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
   projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
@@ -11,16 +12,9 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// @see https://github.com/firebase/firebase-js-sdk/issues/7942
-let app, auth, db;
-try {
-  app = getApp();
-} catch (e) {
-  app = initializeApp(firebaseConfig);
-}
-
-auth = getAuth(app);
-db = getFirestore(app);
-
+// Initialize Firebase
+const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const db = getFirestore(app);
 
 export { app, auth, db };
