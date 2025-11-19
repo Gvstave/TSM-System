@@ -19,6 +19,7 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!currentUser) return;
     const q = query(
       collection(db, 'projects'),
       where('assignedTo', 'array-contains', {id: currentUser.uid, name: currentUser.name})
@@ -29,10 +30,13 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
       );
       setProjects(fetchedProjects.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()));
       setLoading(false);
+    }, (error) => {
+      console.error("Error fetching projects: ", error);
+      setLoading(false);
     });
 
     return () => unsubscribe();
-  }, [currentUser.uid, currentUser.name]);
+  }, [currentUser]);
 
   const renderProjectList = (filteredProjects: Project[]) => {
     if (loading) {

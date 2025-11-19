@@ -21,7 +21,7 @@ export type Project = {
   title: string;
   description: string;
   deadline: Timestamp;
-  assignedTo: AssignedStudent[];
+  assignedTo: AssignedStudent[]; // This is an array of objects with id and name
   createdBy: string;
   status: ProjectStatus;
   createdAt: Timestamp;

@@ -83,7 +83,9 @@ export function ProjectCard({ project, userRole }: ProjectCardProps) {
   }
 
   const StatusIcon = statusConfig[project.status].icon;
-  const assignedToNames = project.assignedTo.map(s => s.name).join(', ');
+  const assignedToNames = Array.isArray(project.assignedTo) 
+    ? project.assignedTo.map(s => s.name).join(', ')
+    : '';
 
   const cardContent = (
      <Card className={cn('flex flex-col transition-all h-full', cardBorderColor, 'cursor-pointer hover:shadow-md')}>
