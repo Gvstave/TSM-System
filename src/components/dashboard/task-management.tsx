@@ -38,6 +38,7 @@ const taskSchema = z.object({
 
 interface TaskManagementProps {
   project: Project;
+  readOnly: boolean;
 }
 
 const statusConfig: Record<
@@ -50,7 +51,7 @@ const statusConfig: Record<
 };
 
 
-export function TaskManagement({ project }: TaskManagementProps) {
+export function TaskManagement({ project, readOnly }: TaskManagementProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -72,7 +73,7 @@ export function TaskManagement({ project }: TaskManagementProps) {
   }, [project.id]);
 
   async function onSubmit(values: z.infer<typeof taskSchema>) {
-    if (!user) return;
+    if (!user || readOnly) return;
     setIsLoading(true);
 
     const result = await createTask({
@@ -92,7 +93,7 @@ export function TaskManagement({ project }: TaskManagementProps) {
   }
 
   const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
-    if (!user) return;
+    if (!user || readOnly) return;
     setIsUpdating(taskId);
     const result = await updateTaskStatus(taskId, newStatus, user.uid);
     if (result.success) {
@@ -112,28 +113,31 @@ export function TaskManagement({ project }: TaskManagementProps) {
 
   return (
     <div className="space-y-4">
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start gap-2">
-          <FormField
-            control={form.control}
-            name="title"
-            render={({ field }) => (
-              <FormItem className="flex-grow">
-                <FormControl>
-                  <Input placeholder="Break down project into a smaller task..." {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-            <span className="ml-2 hidden sm:inline">Add Task</span>
-          </Button>
-        </form>
-      </Form>
-
-      <Separator />
+      {!readOnly && (
+        <>
+            <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start gap-2">
+                <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                    <FormItem className="flex-grow">
+                        <FormControl>
+                        <Input placeholder="Break down project into a smaller task..." {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <Button type="submit" disabled={isLoading}>
+                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    <span className="ml-2 hidden sm:inline">Add Task</span>
+                </Button>
+                </form>
+            </Form>
+            <Separator />
+        </>
+      )}
       
       <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
         {tasks.length > 0 ? (
@@ -144,7 +148,7 @@ export function TaskManagement({ project }: TaskManagementProps) {
                 <Select
                     value={task.status}
                     onValueChange={(newStatus: TaskStatus) => handleStatusChange(task.id, newStatus)}
-                    disabled={isUpdating === task.id}
+                    disabled={isUpdating === task.id || readOnly}
                 >
                     <SelectTrigger className="w-[150px]">
                         <SelectValue>
@@ -180,7 +184,7 @@ export function TaskManagement({ project }: TaskManagementProps) {
           ))
         ) : (
           <p className="text-sm text-muted-foreground text-center py-4">
-            No tasks created yet. Add your first task above.
+            {readOnly ? 'The student has not created any tasks for this project yet.' : 'No tasks created yet. Add your first task above.'}
           </p>
         )}
       </div>
