@@ -492,73 +492,75 @@ export function TaskManagement({
           <Separator />
         </>
       )}
-      <div className="grid md:grid-cols-2 gap-6 h-[500px]">
-        <ScrollArea className="rounded-md border p-4">
-          <div className="space-y-2">
-            {parentTasks.length > 0 ? (
-              parentTasks.map((task) => (
-                <div key={task.id} className="space-y-2">
-                  {renderTask(task, false)}
-                  {showSubtaskInput === task.id &&
-                    !readOnly &&
-                    !isProjectCompleted && (
-                      <Form {...subtaskForm}>
-                        <form
-                          onSubmit={subtaskForm.handleSubmit((values) =>
-                            handleSubtaskSubmit(values, task.id)
-                          )}
-                          className="ml-8 flex items-center gap-2"
-                        >
-                          <FormField
-                            control={subtaskForm.control}
-                            name="title"
-                            render={({ field }) => (
-                              <FormItem className="flex-grow">
-                                <FormControl>
-                                  <Input
-                                    placeholder="Add a new subtask..."
-                                    {...field}
-                                    autoFocus
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
+      <div className="flex space-x-6">
+        <div className="w-1/2 flex flex-col min-h-[400px]">
+          <ScrollArea className="flex-grow rounded-md border p-4">
+            <div className="space-y-2">
+              {parentTasks.length > 0 ? (
+                parentTasks.map((task) => (
+                  <div key={task.id} className="space-y-2">
+                    {renderTask(task, false)}
+                    {showSubtaskInput === task.id &&
+                      !readOnly &&
+                      !isProjectCompleted && (
+                        <Form {...subtaskForm}>
+                          <form
+                            onSubmit={subtaskForm.handleSubmit((values) =>
+                              handleSubtaskSubmit(values, task.id)
                             )}
-                          />
-                          <Button
-                            type="submit"
-                            disabled={isLoading}
-                            size="icon"
+                            className="ml-8 flex items-center gap-2"
                           >
-                            {isLoading ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <Plus className="h-4 w-4" />
-                            )}
-                            <span className="sr-only">Add Subtask</span>
-                          </Button>
-                        </form>
-                      </Form>
-                    )}
-                  {task.subtasks?.map((subtask) => renderTask(subtask, true))}
+                            <FormField
+                              control={subtaskForm.control}
+                              name="title"
+                              render={({ field }) => (
+                                <FormItem className="flex-grow">
+                                  <FormControl>
+                                    <Input
+                                      placeholder="Add a new subtask..."
+                                      {...field}
+                                      autoFocus
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <Button
+                              type="submit"
+                              disabled={isLoading}
+                              size="icon"
+                            >
+                              {isLoading ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Plus className="h-4 w-4" />
+                              )}
+                              <span className="sr-only">Add Subtask</span>
+                            </Button>
+                          </form>
+                        </Form>
+                      )}
+                    {task.subtasks?.map((subtask) => renderTask(subtask, true))}
+                  </div>
+                ))
+              ) : (
+                <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
+                  <MessageCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-4 text-lg font-semibold">
+                    {readOnly ? 'No tasks yet' : 'No tasks created yet'}
+                  </h3>
+                  <p className="mb-4 mt-2 text-sm text-muted-foreground">
+                    {readOnly
+                      ? 'The student has not created any tasks.'
+                      : 'Add your first task to get started.'}
+                  </p>
                 </div>
-              ))
-            ) : (
-              <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
-                <MessageCircle className="mx-auto h-12 w-12 text-muted-foreground" />
-                <h3 className="mt-4 text-lg font-semibold">
-                  {readOnly ? 'No tasks yet' : 'No tasks created yet'}
-                </h3>
-                <p className="mb-4 mt-2 text-sm text-muted-foreground">
-                  {readOnly
-                    ? 'The student has not created any tasks.'
-                    : 'Add your first task to get started.'}
-                </p>
-              </div>
-            )}
-          </div>
-        </ScrollArea>
-        <div className="flex flex-col rounded-lg border">
+              )}
+            </div>
+          </ScrollArea>
+        </div>
+        <div className="w-1/2 flex flex-col rounded-lg border">
           {selectedTask ? (
             <>
               <div className="p-4 border-b">
