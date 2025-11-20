@@ -5,6 +5,9 @@ import type { Metadata } from 'next';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/context/auth-context';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { CheckSquare } from 'lucide-react';
+import Link from 'next/link';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const spaceGrotesk = Space_Grotesk({
@@ -32,8 +35,10 @@ export default function RootLayout({
         )}
       >
         <AuthProvider>
-          {children}
-          <Toaster />
+            <div className="flex flex-col min-h-screen">
+                {children}
+            </div>
+            <Toaster />
         </AuthProvider>
       </body>
     </html>
