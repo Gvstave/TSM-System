@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
 import { MainSidebar } from '@/components/main-sidebar';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -15,7 +16,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     if (!loading && !user) {
       router.replace(`/login?redirect=${pathname}`);
     }
-  }, [user, loading, router, pathname]);
+  }, [user, loading, router]);
 
   if (loading || !user) {
     return (
@@ -26,9 +27,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen">
-      <MainSidebar />
-      <main className="flex-1 overflow-y-auto">{children}</main>
-    </div>
+    <SidebarProvider>
+      <div className="flex min-h-screen">
+        <MainSidebar />
+        <main className="flex-1 overflow-y-auto">{children}</main>
+      </div>
+    </SidebarProvider>
   );
 }
