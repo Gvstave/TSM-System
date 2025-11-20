@@ -201,7 +201,6 @@ type CommentInputAction = {
     taskId: string;
     userId: string;
     userName: string;
-    userImage?: string;
     text: string;
 };
 

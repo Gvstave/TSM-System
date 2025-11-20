@@ -49,6 +49,7 @@ import {
   CalendarIcon,
   MessageSquarePlus,
   MessageCircle,
+  UserCircle,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -63,7 +64,6 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { format, formatDistanceToNow } from 'date-fns';
 import { Calendar } from '../ui/calendar';
-import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { ScrollArea } from '../ui/scroll-area';
 import { AITaskSuggester } from './ai-task-suggester';
 
@@ -286,7 +286,6 @@ export function TaskManagement({
         taskId: selectedTask.id,
         userId: user.uid,
         userName: user.name,
-        userImage: user.image,
         text: values.text,
     });
 
@@ -569,10 +568,7 @@ export function TaskManagement({
                         {comments.length > 0 ? (
                             comments.map(comment => (
                                 <div key={comment.id} className="flex items-start gap-3">
-                                    <Avatar className="h-8 w-8">
-                                        <AvatarImage src={comment.userImage} />
-                                        <AvatarFallback>{comment.userName.charAt(0)}</AvatarFallback>
-                                    </Avatar>
+                                    <UserCircle className="h-8 w-8 text-muted-foreground" />
                                     <div className='flex-1'>
                                         <div className="flex items-center gap-2">
                                             <p className="font-semibold text-sm">{comment.userName}</p>

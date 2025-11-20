@@ -12,7 +12,6 @@ import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 import { auth, db } from '@/lib/firebase';
 import type { User } from '@/lib/types';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 interface AuthContextType {
   user: User | null;
@@ -39,10 +38,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
           const userData = userDoc.data() as User;
-          // Assign a random placeholder image if one isn't set
-          if (!userData.image) {
-            userData.image = PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)].imageUrl;
-          }
           setUser(userData);
         } else {
           setUser(null);

@@ -41,7 +41,6 @@ import { Logo } from '@/components/logo';
 import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import type { User } from '@/lib/types';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const signupSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
@@ -124,15 +123,12 @@ export function AuthForm({ type }: AuthFormProps) {
           password
         );
         const user = userCredential.user;
-
-        const randomAvatar = PlaceHolderImages[Math.floor(Math.random() * PlaceHolderImages.length)].imageUrl;
         
         const userData: Omit<User, 'lecturerId'> & { lecturerId?: string } = {
           uid: user.uid,
           name,
           email,
           role,
-          image: randomAvatar,
         };
 
         if (role === 'student') {
