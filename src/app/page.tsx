@@ -14,6 +14,8 @@ export default function RootPage() {
       if (user) {
         router.replace('/dashboard');
       } else {
+        // Corrected: Redirect to the public landing page, which is at the root.
+        // The (public) layout will handle rendering the correct page.
         router.replace('/');
       }
     }
