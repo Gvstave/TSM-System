@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { collection, query, where, onSnapshot, Timestamp, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, Timestamp, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
 import type { Project, Task, TaskStatus, Comment } from '@/lib/types';
@@ -431,8 +431,7 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
       )}
 
       <div className="grid md:grid-cols-2 gap-6 h-[500px]">
-        <div className="flex flex-col">
-          <ScrollArea className="flex-grow pr-4 -mr-4">
+          <ScrollArea className="rounded-md border p-4">
             <div className="space-y-2">
               {parentTasks.length > 0 ? (
                 parentTasks.map((task) => (
@@ -499,7 +498,6 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
               )}
             </div>
           </ScrollArea>
-        </div>
         <div className="flex flex-col rounded-lg border">
           {selectedTask ? (
             <>
