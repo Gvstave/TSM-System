@@ -341,7 +341,7 @@ export function TaskManagement({
         key={task.id}
         className={cn(
             "w-full cursor-pointer transition-colors", 
-            isSubtask && "ml-[50px] mr-2",
+            isSubtask && "ml-8 mr-2",
             selectedTask?.id === task.id ? "bg-muted border-primary" : "bg-card hover:bg-muted/50"
         )}
         onClick={() => setSelectedTask(task)}
@@ -492,8 +492,8 @@ export function TaskManagement({
         </>
       )}
 
-      <div className="flex min-h-0 flex-1 flex-col space-y-4 md:flex-row md:space-x-6 md:space-y-0">
-        <div className="flex flex-col space-y-2 md:w-3/5">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-0 flex-1">
+        <div className="flex flex-col space-y-2">
            {parentTasks.length === 0 && !isLoading && (
                  <div className="flex h-full flex-col items-center justify-center rounded-lg border bg-muted/50 p-12 text-center">
                     <MessageCircle className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -548,7 +548,7 @@ export function TaskManagement({
                  </div>
             </ScrollArea>
         </div>
-        <div className="flex h-full flex-col rounded-lg border md:w-2/5 mt-4 md:mt-0">
+        <div className="flex h-full flex-col rounded-lg border">
             {selectedTask ? (
                 <>
                     <div className="p-4 border-b">
@@ -647,5 +647,3 @@ export function TaskManagement({
     </div>
   );
 }
-
-    
