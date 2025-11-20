@@ -341,7 +341,7 @@ export function TaskManagement({
         key={task.id}
         className={cn(
             "w-full cursor-pointer transition-colors", 
-            isSubtask && "ml-8 mr-2",
+            isSubtask && "ml-4 mr-2",
             selectedTask?.id === task.id ? "bg-muted border-primary" : "bg-card hover:bg-muted/50"
         )}
         onClick={() => setSelectedTask(task)}
@@ -647,3 +647,5 @@ export function TaskManagement({
     </div>
   );
 }
+
+    
