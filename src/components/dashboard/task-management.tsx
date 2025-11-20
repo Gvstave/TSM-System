@@ -99,7 +99,7 @@ const statusConfig: Record<
 };
 
 export function TaskManagement({
-  project: initialProject,
+  project,
   readOnly,
 }: TaskManagementProps) {
   const { user } = useAuth();
@@ -129,12 +129,12 @@ export function TaskManagement({
     defaultValues: { text: '' },
   });
 
-  const fetchTasks = useCallback(() => {
-    if (!initialProject) return;
+  const fetchTasks = () => {
+    if (!project) return;
     setIsLoading(true);
     const q = query(
       collection(db, 'tasks'),
-      where('projectId', '==', initialProject.id),
+      where('projectId', '==', project.id),
       orderBy('createdAt', 'asc')
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -145,17 +145,22 @@ export function TaskManagement({
       setIsLoading(false);
     }, (error) => {
       console.error("Error fetching tasks: ", error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: "Could not fetch tasks."
+      });
       setIsLoading(false);
     });
     return unsubscribe;
-  }, [initialProject]);
+  }
 
   useEffect(() => {
     const unsubscribe = fetchTasks();
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [fetchTasks]);
+  }, [project.id]);
   
   useEffect(() => {
     if (tasks.length > 0) {
@@ -221,11 +226,11 @@ export function TaskManagement({
   }, [tasks]);
 
   async function onTaskSubmit(values: z.infer<typeof taskSchema>) {
-    if (!user || readOnly || !initialProject) return;
+    if (!user || readOnly || !project) return;
     setIsSubmittingTask(true);
 
     const result = await createTask({
-      projectId: initialProject.id,
+      projectId: project.id,
       title: values.title,
       status: 'Pending',
       createdBy: user.uid,
@@ -249,11 +254,11 @@ export function TaskManagement({
   }
 
   async function handleSubtaskSubmit(values: z.infer<typeof subtaskSchema>, parentId: string) {
-    if (!user || readOnly || !initialProject) return;
+    if (!user || readOnly || !project) return;
     setIsSubmittingTask(true);
 
     const result = await createTask({
-      projectId: initialProject.id,
+      projectId: project.id,
       title: values.title,
       status: 'Pending',
       createdBy: user.uid,
@@ -321,9 +326,9 @@ export function TaskManagement({
   };
 
   const handleProjectSubmit = async () => {
-    if (!user || readOnly || !initialProject) return;
+    if (!user || readOnly || !project) return;
     setIsSubmitting(true);
-    const result = await updateProjectStatus(initialProject.id, 'Completed', user.uid);
+    const result = await updateProjectStatus(project.id, 'Completed', user.uid);
     if (result.success) {
       toast({
         title: 'Project Submitted!',
@@ -340,7 +345,7 @@ export function TaskManagement({
     setIsSubmitting(false);
   };
 
-  const isProjectCompleted = initialProject.status === 'Completed';
+  const isProjectCompleted = project.status === 'Completed';
 
   const renderTask = (task: Task, isSubtask: boolean) => (
     <Card
@@ -419,7 +424,7 @@ export function TaskManagement({
     </Card>
   );
 
-  if (!initialProject) {
+  if (!project) {
     return (
       <div className="flex h-full items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -479,7 +484,7 @@ export function TaskManagement({
                           onSelect={field.onChange}
                           disabled={(date) =>
                             date < new Date() ||
-                            date > (initialProject.deadline as Timestamp).toDate()
+                            date > (project.deadline as Timestamp).toDate()
                           }
                           initialFocus
                         />
@@ -500,7 +505,7 @@ export function TaskManagement({
             </form>
           </Form>
            <div className="flex justify-end">
-              <AITaskSuggester project={initialProject} existingTasks={tasks} onTasksAdded={fetchTasks} />
+              <AITaskSuggester project={project} existingTasks={tasks} onTasksAdded={fetchTasks} />
            </div>
         </div>
       )}
@@ -626,7 +631,7 @@ export function TaskManagement({
             )}
         </div>
       </div>
-      {!readOnly && initialProject.status !== 'Completed' && (
+      {!readOnly && project.status !== 'Completed' && (
         <DialogFooter className="pt-4">
           <TooltipProvider>
             <Tooltip delayDuration={0}>
@@ -660,5 +665,7 @@ export function TaskManagement({
     </div>
   );
 }
+
+    
 
     
