@@ -1,11 +1,9 @@
-
 'use client';
 import { AuthForm } from '@/components/auth/auth-form';
 import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
-
 
 function LoginPageContent() {
   const { user, loading } = useAuth();
@@ -16,7 +14,7 @@ function LoginPageContent() {
       router.replace('/dashboard');
     }
   }, [user, loading, router]);
-  
+
   if (loading || user) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
@@ -29,9 +27,9 @@ function LoginPageContent() {
 }
 
 export default function LoginPage() {
-    return (
-        <Suspense>
-            <LoginPageContent />
-        </Suspense>
-    )
+  return (
+    <Suspense>
+      <LoginPageContent />
+    </Suspense>
+  );
 }
