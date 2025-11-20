@@ -257,20 +257,20 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
 
   const isProjectCompleted = project.status === 'Completed';
 
- const renderTask = (task: Task, isSubtask: boolean) => (
+  const renderTask = (task: Task, isSubtask: boolean) => (
     <Card 
         key={task.id} 
         className={cn(
             "cursor-pointer transition-all hover:bg-muted/50",
-            isSubtask && "ml-8",
+            isSubtask && "ml-6",
             selectedTask?.id === task.id && "bg-muted border-primary"
         )}
         onClick={() => setSelectedTask(task)}
     >
         <CardContent className="p-3 flex items-center justify-between gap-2">
-            <div className="flex-1 flex items-center gap-2 min-w-0">
+            <div className="flex-1 flex items-center gap-3 min-w-0">
                 {isSubtask && <CornerDownRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
-                <p className="flex-1 truncate">{task.title}</p>
+                <p className="flex-1 truncate font-medium">{task.title}</p>
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
                 {task.dueDate && (
