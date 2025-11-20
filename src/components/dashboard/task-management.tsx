@@ -268,7 +268,7 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
         onClick={() => setSelectedTask(task)}
     >
         <CardContent className="p-3 flex items-center justify-between gap-2">
-            <div className="flex-1 flex items-center gap-3 min-w-0">
+            <div className="flex-1 flex items-center gap-2 min-w-0">
                 {isSubtask && <CornerDownRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />}
                 <p className="flex-1 truncate font-medium">{task.title}</p>
             </div>
@@ -333,7 +333,7 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
   )
 
   return (
-    <div className="grid md:grid-cols-2 gap-6">
+    <div className="grid md:grid-cols-2 gap-6 items-start">
         <div className="space-y-4">
             {!readOnly && !isProjectCompleted && (
                 <>
@@ -473,7 +473,7 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
               </DialogFooter>
             )}
         </div>
-        <div className="flex flex-col rounded-lg border h-[32rem]">
+        <div className="flex flex-col rounded-lg border h-[calc(24rem+100px)]">
             {selectedTask ? (
                 <>
                 <div className="p-4 border-b">
