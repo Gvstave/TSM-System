@@ -100,7 +100,7 @@ export async function updateProjectStatus(
   }
 }
 
-type TaskInputAction = Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'dueDate'> & {
+type TaskInputAction = Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'dueDate' | 'subtasks'> & {
   dueDate?: string; // ISO string
 };
 

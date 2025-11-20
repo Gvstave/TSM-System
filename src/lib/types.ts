@@ -43,4 +43,6 @@ export type Task = {
     updatedAt: Timestamp;
     dueDate?: Timestamp;
     grade?: number;
+    parentId?: string;
+    subtasks?: Task[];
 }

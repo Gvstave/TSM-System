@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,7 +27,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Loader2, Circle, CircleDot, CircleCheck, Send, CalendarIcon } from 'lucide-react';
+import { Plus, Loader2, Circle, CircleDot, CircleCheck, Send, CalendarIcon, CornerDownRight, MessageSquarePlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
@@ -40,6 +40,10 @@ import { Calendar } from '../ui/calendar';
 const taskSchema = z.object({
   title: z.string().min(3, 'Task title must be at least 3 characters.'),
   dueDate: z.date().optional(),
+});
+
+const subtaskSchema = z.object({
+    title: z.string().min(3, 'Subtask title must be at least 3 characters.')
 });
 
 interface TaskManagementProps {
@@ -65,11 +69,17 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSubtaskInput, setShowSubtaskInput] = useState<string | null>(null);
 
 
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
     defaultValues: { title: '', dueDate: undefined },
+  });
+  
+  const subtaskForm = useForm<z.infer<typeof subtaskSchema>>({
+    resolver: zodResolver(subtaskSchema),
+    defaultValues: { title: '' },
   });
 
   useEffect(() => {
@@ -80,6 +90,34 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
     });
     return () => unsubscribe();
   }, [project.id]);
+
+  const { parentTasks, allTasksCompleted } = useMemo(() => {
+    const parentTasksMap = new Map<string, Task>();
+    const subtasksMap = new Map<string, Task[]>();
+
+    for (const task of tasks) {
+      if (task.parentId) {
+        if (!subtasksMap.has(task.parentId)) {
+          subtasksMap.set(task.parentId, []);
+        }
+        subtasksMap.get(task.parentId)!.push(task);
+      } else {
+        parentTasksMap.set(task.id, { ...task, subtasks: [] });
+      }
+    }
+
+    for (const [parentId, subtasks] of subtasksMap.entries()) {
+      if (parentTasksMap.has(parentId)) {
+        parentTasksMap.get(parentId)!.subtasks = subtasks.sort((a,b) => a.createdAt.toMillis() - b.createdAt.toMillis());
+      }
+    }
+    
+    const parentTasksArray = Array.from(parentTasksMap.values());
+    const allTasksCompleted = tasks.length > 0 && tasks.every(t => t.status === 'Completed');
+
+    return { parentTasks: parentTasksArray, allTasksCompleted };
+  }, [tasks]);
+
 
   async function onSubmit(values: z.infer<typeof taskSchema>) {
     if (!user || readOnly) return;
@@ -104,6 +142,29 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
     }
     setIsLoading(false);
   }
+
+  async function handleSubtaskSubmit(values: z.infer<typeof subtaskSchema>, parentId: string) {
+    if (!user || readOnly) return;
+    setIsLoading(true);
+
+    const result = await createTask({
+      projectId: project.id,
+      title: values.title,
+      status: 'Pending',
+      createdBy: user.uid,
+      parentId,
+    });
+
+    if (result.success) {
+      toast({ title: 'Subtask Added', description: `"${values.title}" has been added.` });
+      subtaskForm.reset();
+      setShowSubtaskInput(null);
+    } else {
+      toast({ variant: 'destructive', title: 'Error', description: result.error });
+    }
+    setIsLoading(false);
+  }
+
 
   const handleStatusChange = async (taskId: string, newStatus: TaskStatus) => {
     if (!user || readOnly) return;
@@ -143,8 +204,74 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
     setIsSubmitting(false);
   }
 
-  const allTasksCompleted = tasks.length > 0 && tasks.every(t => t.status === 'Completed');
   const isProjectCompleted = project.status === 'Completed';
+
+  const renderTask = (task: Task, isSubtask: boolean) => (
+     <Card key={task.id} className={cn(isSubtask && "ml-8")}>
+        <CardContent className="p-3 flex items-center justify-between gap-4">
+        <div className="flex-grow flex items-center gap-2">
+            {isSubtask && <CornerDownRight className="h-4 w-4 text-muted-foreground" />}
+            <p>{task.title}</p>
+            {task.dueDate && (
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <CalendarIcon className="h-3 w-3" />
+                    <span>{format((task.dueDate as Timestamp).toDate(), 'MMM d')}</span>
+                </div>
+            )}
+        </div>
+        <div className="flex items-center gap-2">
+            {!isSubtask && !readOnly && !isProjectCompleted && (
+                 <TooltipProvider>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowSubtaskInput(current => current === task.id ? null : task.id)}>
+                                <MessageSquarePlus className="h-4 w-4" />
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Add subtask</p>
+                        </TooltipContent>
+                    </Tooltip>
+                 </TooltipProvider>
+            )}
+            <Select
+                value={task.status}
+                onValueChange={(newStatus: TaskStatus) => handleStatusChange(task.id, newStatus)}
+                disabled={isUpdating === task.id || readOnly || isProjectCompleted}
+            >
+                <SelectTrigger className="w-[150px] flex-shrink-0">
+                    <SelectValue>
+                        <div className="flex items-center gap-2">
+                            {isUpdating === task.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                React.createElement(statusConfig[task.status].icon, {
+                                    className: cn('h-4 w-4', statusConfig[task.status].color),
+                                })
+                            )}
+                            <span>{task.status}</span>
+                        </div>
+                    </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                    {Object.keys(statusConfig).map((status) => {
+                        const Icon = statusConfig[status as TaskStatus].icon;
+                        const color = statusConfig[status as TaskStatus].color;
+                        return (
+                        <SelectItem key={status} value={status}>
+                            <div className="flex items-center gap-2">
+                            <Icon className={cn('h-4 w-4', color)} />
+                            <span>{status}</span>
+                            </div>
+                        </SelectItem>
+                        );
+                    })}
+                </SelectContent>
+            </Select>
+        </div>
+        </CardContent>
+    </Card>
+  )
 
   return (
     <div className="space-y-4">
@@ -158,7 +285,7 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
                         render={({ field }) => (
                         <FormItem className="flex-grow">
                             <FormControl>
-                            <Input placeholder="Break down project into a smaller task..." {...field} />
+                            <Input placeholder="Add a new task..." {...field} />
                             </FormControl>
                             <FormMessage />
                         </FormItem>
@@ -213,55 +340,34 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
       )}
       
       <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
-        {tasks.length > 0 ? (
-          tasks.map(task => (
-            <Card key={task.id}>
-              <CardContent className="p-3 flex items-center justify-between gap-4">
-                <div className="flex-grow flex items-center gap-2">
-                    <p>{task.title}</p>
-                    {task.dueDate && (
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <CalendarIcon className="h-3 w-3" />
-                            <span>{format((task.dueDate as Timestamp).toDate(), 'MMM d')}</span>
-                        </div>
-                    )}
-                </div>
-                <Select
-                    value={task.status}
-                    onValueChange={(newStatus: TaskStatus) => handleStatusChange(task.id, newStatus)}
-                    disabled={isUpdating === task.id || readOnly || isProjectCompleted}
-                >
-                    <SelectTrigger className="w-[150px] flex-shrink-0">
-                        <SelectValue>
-                            <div className="flex items-center gap-2">
-                                {isUpdating === task.id ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    React.createElement(statusConfig[task.status].icon, {
-                                        className: cn('h-4 w-4', statusConfig[task.status].color),
-                                    })
+        {parentTasks.length > 0 ? (
+          parentTasks.map(task => (
+            <div key={task.id} className="space-y-2">
+                {renderTask(task, false)}
+                {showSubtaskInput === task.id && !readOnly && !isProjectCompleted && (
+                    <Form {...subtaskForm}>
+                        <form onSubmit={subtaskForm.handleSubmit((values) => handleSubtaskSubmit(values, task.id))} className="ml-8 flex items-center gap-2">
+                             <FormField
+                                control={subtaskForm.control}
+                                name="title"
+                                render={({ field }) => (
+                                <FormItem className="flex-grow">
+                                    <FormControl>
+                                    <Input placeholder="Add a new subtask..." {...field} autoFocus />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
                                 )}
-                                <span>{task.status}</span>
-                            </div>
-                        </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                        {Object.keys(statusConfig).map((status) => {
-                            const Icon = statusConfig[status as TaskStatus].icon;
-                            const color = statusConfig[status as TaskStatus].color;
-                            return (
-                            <SelectItem key={status} value={status}>
-                                <div className="flex items-center gap-2">
-                                <Icon className={cn('h-4 w-4', color)} />
-                                <span>{status}</span>
-                                </div>
-                            </SelectItem>
-                            );
-                        })}
-                    </SelectContent>
-                </Select>
-              </CardContent>
-            </Card>
+                            />
+                             <Button type="submit" disabled={isLoading} size="icon">
+                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                                <span className="sr-only">Add Subtask</span>
+                            </Button>
+                        </form>
+                    </Form>
+                )}
+                {task.subtasks?.map(subtask => renderTask(subtask, true))}
+            </div>
           ))
         ) : (
           <p className="text-sm text-muted-foreground text-center py-4">
