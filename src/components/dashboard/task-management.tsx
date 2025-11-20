@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
 import type { Project, Task, TaskStatus } from '@/lib/types';
@@ -27,15 +27,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Loader2, Circle, CircleDot, CircleCheck, Send } from 'lucide-react';
+import { Plus, Loader2, Circle, CircleDot, CircleCheck, Send, CalendarIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
 import { DialogFooter } from '../ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
+import { format } from 'date-fns';
+import { Calendar } from '../ui/calendar';
 
 const taskSchema = z.object({
   title: z.string().min(3, 'Task title must be at least 3 characters.'),
+  dueDate: z.date().optional(),
 });
 
 interface TaskManagementProps {
@@ -65,7 +69,7 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
 
   const form = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
-    defaultValues: { title: '' },
+    defaultValues: { title: '', dueDate: undefined },
   });
 
   useEffect(() => {
@@ -86,6 +90,7 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
       title: values.title,
       status: 'Pending',
       createdBy: user.uid,
+      dueDate: values.dueDate?.toISOString(),
     });
 
     if (result.success) {
@@ -147,22 +152,60 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
         <>
             <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start gap-2">
-                <FormField
-                    control={form.control}
-                    name="title"
-                    render={({ field }) => (
-                    <FormItem className="flex-grow">
-                        <FormControl>
-                        <Input placeholder="Break down project into a smaller task..." {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <Button type="submit" disabled={isLoading}>
-                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                    <span className="ml-2 hidden sm:inline">Add Task</span>
-                </Button>
+                    <FormField
+                        control={form.control}
+                        name="title"
+                        render={({ field }) => (
+                        <FormItem className="flex-grow">
+                            <FormControl>
+                            <Input placeholder="Break down project into a smaller task..." {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="dueDate"
+                        render={({ field }) => (
+                            <FormItem>
+                                <Popover>
+                                    <PopoverTrigger asChild>
+                                    <FormControl>
+                                        <Button
+                                            variant={'outline'}
+                                            className={cn(
+                                                'w-[150px] pl-3 text-left font-normal',
+                                                !field.value && 'text-muted-foreground'
+                                            )}
+                                            >
+                                            {field.value ? (
+                                                format(field.value, 'MMM d')
+                                            ) : (
+                                                <span>Set due date</span>
+                                            )}
+                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                        </Button>
+                                    </FormControl>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                    <Calendar
+                                        mode="single"
+                                        selected={field.value}
+                                        onSelect={field.onChange}
+                                        disabled={(date) => date < new Date() || date > (project.deadline as Timestamp).toDate()}
+                                        initialFocus
+                                    />
+                                    </PopoverContent>
+                                </Popover>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <Button type="submit" disabled={isLoading} size="icon">
+                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                        <span className="sr-only">Add Task</span>
+                    </Button>
                 </form>
             </Form>
             <Separator />
@@ -173,14 +216,22 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
         {tasks.length > 0 ? (
           tasks.map(task => (
             <Card key={task.id}>
-              <CardContent className="p-3 flex items-center justify-between">
-                <p className="flex-grow">{task.title}</p>
+              <CardContent className="p-3 flex items-center justify-between gap-4">
+                <div className="flex-grow flex items-center gap-2">
+                    <p>{task.title}</p>
+                    {task.dueDate && (
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <CalendarIcon className="h-3 w-3" />
+                            <span>{format((task.dueDate as Timestamp).toDate(), 'MMM d')}</span>
+                        </div>
+                    )}
+                </div>
                 <Select
                     value={task.status}
                     onValueChange={(newStatus: TaskStatus) => handleStatusChange(task.id, newStatus)}
                     disabled={isUpdating === task.id || readOnly || isProjectCompleted}
                 >
-                    <SelectTrigger className="w-[150px]">
+                    <SelectTrigger className="w-[150px] flex-shrink-0">
                         <SelectValue>
                             <div className="flex items-center gap-2">
                                 {isUpdating === task.id ? (

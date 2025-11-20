@@ -100,8 +100,13 @@ export async function updateProjectStatus(
   }
 }
 
+type TaskInputAction = Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'dueDate'> & {
+  dueDate?: string; // ISO string
+};
+
+
 export async function createTask(
-  taskInput: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>
+  taskInput: TaskInputAction
 ) {
   try {
     const projectRef = doc(db, 'projects', taskInput.projectId);
@@ -113,16 +118,24 @@ export async function createTask(
 
     const projectData = projectSnap.data();
 
+    const { dueDate, ...restOfTask } = taskInput;
+    const taskData: any = {
+        ...restOfTask,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+    };
+
+    if (dueDate) {
+        taskData.dueDate = Timestamp.fromDate(new Date(dueDate));
+    }
+
+
     // Start a batch to perform multiple writes atomically
     const batch = writeBatch(db);
 
     // 1. Add the new task
     const taskRef = doc(collection(db, 'tasks'));
-    batch.set(taskRef, {
-      ...taskInput,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+    batch.set(taskRef, taskData);
 
     // 2. If project is 'Pending', update it to 'In Progress'
     if (projectData.status === 'Pending') {

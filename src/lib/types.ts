@@ -41,5 +41,6 @@ export type Task = {
     createdBy: string; // student's uid
     createdAt: Timestamp;
     updatedAt: Timestamp;
+    dueDate?: Timestamp;
     grade?: number;
 }
