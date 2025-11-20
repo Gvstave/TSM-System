@@ -24,7 +24,7 @@ function LandingPage() {
             Task Management & Scheduling System
           </h1>
           <p className="mx-auto max-w-[700px] text-muted-foreground md:text-xl">
-            A minimal and clean way to manage academic projects. Built for
+            An AI-powered, minimal, and clean way to manage academic projects. Built for
             lecturers and students.
           </p>
           <div className="space-x-4">
