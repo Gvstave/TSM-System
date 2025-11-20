@@ -508,7 +508,7 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
                         )}
                     </div>
                 </ScrollArea>
-                {!isProjectCompleted && (
+                {!readOnly && !isProjectCompleted && (
                     <div className="p-4 border-t bg-muted/50">
                         <Form {...commentForm}>
                             <form onSubmit={commentForm.handleSubmit(onCommentSubmit)} className="flex items-center gap-2">
