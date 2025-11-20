@@ -47,7 +47,6 @@ import {
   CircleCheck,
   Send,
   CalendarIcon,
-  CornerDownRight,
   MessageSquarePlus,
   MessageCircle,
 } from 'lucide-react';
@@ -131,16 +130,17 @@ export function TaskManagement({
     setIsLoading(true);
     const q = query(
       collection(db, 'tasks'),
-      where('projectId', '==', project.id)
+      where('projectId', '==', project.id),
+      orderBy('createdAt', 'asc')
     );
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const fetchedTasks = snapshot.docs.map(
         (doc) => ({ id: doc.id, ...doc.data() } as Task)
       );
-      const sortedTasks = fetchedTasks.sort(
-          (a, b) => a.createdAt.toMillis() - b.createdAt.toMillis()
-      );
-      setTasks(sortedTasks);
+      setTasks(fetchedTasks);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error fetching tasks: ", error);
       setIsLoading(false);
     });
     return unsubscribe;
@@ -150,14 +150,13 @@ export function TaskManagement({
     const unsubscribe = fetchTasks();
     return () => unsubscribe();
   }, [fetchTasks]);
-
+  
   useEffect(() => {
     if (tasks.length > 0) {
       const selectedExists = tasks.some(t => t.id === selectedTask?.id);
       if (!selectedExists || !selectedTask) {
         setSelectedTask(tasks.find(t => !t.parentId) || tasks[0]);
       } else {
-        // Update selectedTask with the latest data from tasks array
         const updatedSelectedTask = tasks.find(t => t.id === selectedTask.id);
         if (updatedSelectedTask) {
           setSelectedTask(updatedSelectedTask);
@@ -166,7 +165,7 @@ export function TaskManagement({
     } else {
       setSelectedTask(null);
     }
-  }, [tasks, selectedTask]);
+  }, [tasks, selectedTask?.id]);
 
 
   useEffect(() => {
@@ -204,9 +203,7 @@ export function TaskManagement({
 
     for (const [parentId, subtasks] of subtasksMap.entries()) {
       if (parentTasksMap.has(parentId)) {
-        parentTasksMap.get(parentId)!.subtasks = subtasks.sort(
-          (a, b) => a.createdAt.toMillis() - b.createdAt.toMillis()
-        );
+        parentTasksMap.get(parentId)!.subtasks = subtasks;
       }
     }
 
@@ -267,6 +264,9 @@ export function TaskManagement({
       });
       subtaskForm.reset();
       setShowSubtaskInput(null);
+      if (result.updatedProjectStatus) {
+        onTaskCreated?.();
+      }
     } else {
       toast({
         variant: 'destructive',
@@ -353,7 +353,7 @@ export function TaskManagement({
         )}
         onClick={() => setSelectedTask(task)}
     >
-      <CardContent className={cn("flex items-center justify-between p-2.5", isSubtask && "p-1.5")}>
+      <CardContent className={cn("flex items-center justify-between p-2.5", isSubtask && "p-1.5 pl-12")}>
         <p className={cn("flex-1 font-medium line-clamp-1 text-sm", isSubtask && "text-xs")}>{task.title}</p>
         <div className="flex items-center gap-2">
             {task.dueDate && (
@@ -423,7 +423,7 @@ export function TaskManagement({
   return (
     <div className="flex h-full flex-col space-y-4">
       {!readOnly && !isProjectCompleted && (
-        <>
+        <div className='space-y-4 rounded-md border p-4'>
           <Form {...taskForm}>
             <form
               onSubmit={taskForm.handleSubmit(onTaskSubmit)}
@@ -495,8 +495,7 @@ export function TaskManagement({
            <div className="flex justify-end">
               <AITaskSuggester project={project} existingTasks={tasks} onTasksAdded={fetchTasks} />
            </div>
-          <Separator />
-        </>
+        </div>
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-0 flex-1">
@@ -525,27 +524,30 @@ export function TaskManagement({
                     <div key={task.id} className="space-y-1 overflow-hidden">
                         {renderTask(task, false)}
                         {showSubtaskInput === task.id && !readOnly && !isProjectCompleted && (
-                            <Form {...subtaskForm}>
-                                <form onSubmit={subtaskForm.handleSubmit(values => handleSubtaskSubmit(values, task.id))} className="ml-12 flex items-center gap-2">
-                                    <CornerDownRight className="h-5 w-5 text-muted-foreground" />
-                                    <FormField
-                                        control={subtaskForm.control}
-                                        name="title"
-                                        render={({ field }) => (
-                                        <FormItem className="flex-grow">
-                                            <FormControl>
-                                            <Input placeholder="Add a new subtask..." {...field} autoFocus />
-                                            </FormControl>
-                                            <FormMessage />
-                                        </FormItem>
-                                        )}
-                                    />
-                                    <Button type="submit" disabled={isLoading} size="sm" className="h-7">
-                                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                                        <span className="sr-only">Add Subtask</span>
-                                    </Button>
-                                </form>
-                            </Form>
+                            <div className='flex justify-end'>
+                                <div className='w-[95%]'>
+                                    <Form {...subtaskForm}>
+                                        <form onSubmit={subtaskForm.handleSubmit(values => handleSubtaskSubmit(values, task.id))} className="flex items-center gap-2">
+                                            <FormField
+                                                control={subtaskForm.control}
+                                                name="title"
+                                                render={({ field }) => (
+                                                <FormItem className="flex-grow">
+                                                    <FormControl>
+                                                    <Input placeholder="Add a new subtask..." {...field} autoFocus className='h-7 text-xs'/>
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                                )}
+                                            />
+                                            <Button type="submit" disabled={isLoading} size="sm" className="h-7">
+                                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                                                <span className="sr-only">Add Subtask</span>
+                                            </Button>
+                                        </form>
+                                    </Form>
+                                </div>
+                            </div>
                         )}
                         <div className="flex flex-col space-y-1 items-end">
                             {task.subtasks?.map((subtask) => renderTask(subtask, true))}
@@ -654,8 +656,3 @@ export function TaskManagement({
     </div>
   );
 }
-
-    
-    
-
-    

@@ -61,7 +61,7 @@ export async function createProject(projectInput: ProjectInputAction) {
         });
       }
        // If tasks are being added, the project is immediately "In Progress"
-       batch.update(projectRef, { status: 'In Progress' });
+       batch.update(projectRef, { status: 'In Progress', updatedAt: serverTimestamp() });
     }
 
     await batch.commit();
@@ -121,7 +121,7 @@ export async function updateProjectStatus(
   }
 }
 
-type TaskInputAction = Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'dueDate' | 'subtasks'> & {
+type TaskInputAction = Omit<Task, 'id' | 'createdAt' | 'updatedAt' | 'subtasks' | 'dueDate'> & {
   dueDate?: string; // ISO string
 };
 
