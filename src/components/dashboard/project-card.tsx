@@ -118,6 +118,13 @@ export function ProjectCard({
         .join(', ')
     : 'No students assigned';
 
+  const handleTaskDialogChange = (open: boolean) => {
+    setTaskDialogOpen(open);
+    if (!open && onProjectUpdate) {
+      onProjectUpdate();
+    }
+  };
+
   const cardContent = (
     <Card
       className={cn('flex h-full flex-col transition-all', cardBorderColor)}
@@ -195,13 +202,13 @@ export function ProjectCard({
   );
 
   return (
-    <Dialog open={isTaskDialogOpen} onOpenChange={setTaskDialogOpen}>
+    <Dialog open={isTaskDialogOpen} onOpenChange={handleTaskDialogChange}>
       {cardContent}
       <DialogContent className="max-w-3xl">
         <DialogHeader>
           <DialogTitle>{project.title}</DialogTitle>
         </DialogHeader>
-        <TaskManagement project={project} readOnly={userRole === 'lecturer'} onTaskCreated={onProjectUpdate} />
+        <TaskManagement project={project} readOnly={userRole === 'lecturer'} onProjectUpdate={onProjectUpdate} />
       </DialogContent>
 
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>

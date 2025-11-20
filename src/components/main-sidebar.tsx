@@ -6,8 +6,9 @@ import {
   SidebarContent,
   SidebarMenu,
   SidebarMenuItem,
-  SidebarMenuButton,
   SidebarFooter,
+  SidebarProvider,
+  SidebarMenuButton,
 } from '@/components/ui/sidebar';
 import { LayoutDashboard, Home } from 'lucide-react';
 import { Logo } from './logo';
@@ -19,33 +20,35 @@ export function MainSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar>
-      <SidebarHeader>
-        <Logo />
-      </SidebarHeader>
-      <SidebarContent>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton href="/home" isActive={pathname === '/home'}>
-              <Home />
-              Home
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              href="/dashboard"
-              isActive={pathname.startsWith('/dashboard')}
-            >
-              <LayoutDashboard />
-              Dashboard
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarContent>
-      <Separator />
-      <SidebarFooter>
-        <SidebarUserProfile />
-      </SidebarFooter>
-    </Sidebar>
+    <SidebarProvider>
+      <Sidebar>
+        <SidebarHeader>
+          <Logo />
+        </SidebarHeader>
+        <SidebarContent>
+          <SidebarMenu>
+            <SidebarMenuItem>
+              <SidebarMenuButton href="/home" isActive={pathname === '/home'}>
+                <Home />
+                Home
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                href="/dashboard"
+                isActive={pathname.startsWith('/dashboard')}
+              >
+                <LayoutDashboard />
+                Dashboard
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarContent>
+        <Separator />
+        <SidebarFooter>
+          <SidebarUserProfile />
+        </SidebarFooter>
+      </Sidebar>
+    </SidebarProvider>
   );
 }

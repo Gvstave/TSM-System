@@ -4,7 +4,6 @@ import { useAuth } from '@/context/auth-context';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import { SidebarProvider } from '@/components/ui/sidebar';
 import { MainSidebar } from '@/components/main-sidebar';
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -27,11 +26,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <SidebarProvider>
-      <div className="flex min-h-screen">
-        <MainSidebar />
-        <main className="flex-1 overflow-y-auto">{children}</main>
-      </div>
-    </SidebarProvider>
+    <div className="flex min-h-screen">
+      <MainSidebar />
+      <main className="flex-1 overflow-y-auto">{children}</main>
+    </div>
   );
 }

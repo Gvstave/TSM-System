@@ -96,15 +96,17 @@ export function AuthForm({ type }: AuthFormProps) {
 
   useEffect(() => {
     async function fetchLecturers() {
-      if (type === 'signup') {
+      if (type === 'signup' && role === 'student') {
         const lecturersQuery = query(collection(db, 'users'), where('role', '==', 'lecturer'));
         const querySnapshot = await getDocs(lecturersQuery);
         const fetchedLecturers = querySnapshot.docs.map(doc => doc.data() as User);
         setLecturers(fetchedLecturers);
+      } else {
+        setLecturers([]);
       }
     }
     fetchLecturers();
-  }, [type]);
+  }, [type, role]);
 
   async function onSubmit(values: z.infer<typeof schema>) {
     setIsLoading(true);
