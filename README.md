@@ -95,6 +95,6 @@ The technology stack was carefully chosen to create a modern, performant, and sc
     - Get your Firebase project configuration keys and place them in a `.env` file at the root of the project. See the existing `.env` file for the required variable names.
 4.  **Run the development server**:
     ```bash
-    npm run dev
+    next dev
     ```
     The application will be available at `http://localhost:9002`.
