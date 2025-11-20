@@ -135,11 +135,13 @@ export function TaskManagement({
       const fetchedTasks = snapshot.docs.map(
         (doc) => ({ id: doc.id, ...doc.data() } as Task)
       );
-      setTasks(
-        fetchedTasks.sort(
+      const sortedTasks = fetchedTasks.sort(
           (a, b) => a.createdAt.toMillis() - b.createdAt.toMillis()
-        )
       );
+      setTasks(sortedTasks);
+      if (!selectedTask && sortedTasks.length > 0) {
+        setSelectedTask(sortedTasks[0]);
+      }
       setIsLoading(false);
     });
     return () => unsubscribe();
@@ -322,11 +324,15 @@ export function TaskManagement({
   const renderTask = (task: Task, isSubtask: boolean) => (
     <Card
         key={task.id}
-        className={cn("w-full transition-shadow hover:shadow-md", isSubtask && "ml-8")}
+        className={cn(
+            "w-full cursor-pointer transition-colors", 
+            isSubtask && "ml-12",
+            selectedTask?.id === task.id ? "bg-muted/80" : "bg-card hover:bg-muted/50"
+        )}
         onClick={() => setSelectedTask(task)}
     >
       <CardContent className="flex items-center justify-between p-3">
-        <p className="flex-1 font-medium text-base md:text-sm">{task.title}</p>
+        <p className="flex-1 font-medium text-sm line-clamp-1">{task.title}</p>
         <div className="flex items-center gap-2">
             {task.dueDate && (
                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
@@ -338,8 +344,8 @@ export function TaskManagement({
                  <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setShowSubtaskInput(current => current === task.id ? null : task.id)}}>
-                                <MessageSquarePlus className="h-5 w-5" />
+                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setShowSubtaskInput(current => current === task.id ? null : task.id)}}>
+                                <MessageSquarePlus className="h-4 w-4" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -355,7 +361,7 @@ export function TaskManagement({
             }
             disabled={isUpdating === task.id || readOnly || isProjectCompleted}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-[150px] text-xs h-8">
               <SelectValue>
                 <div className="flex items-center gap-2">
                   {isUpdating === task.id ? (
@@ -363,7 +369,7 @@ export function TaskManagement({
                   ) : (
                     React.createElement(statusConfig[task.status].icon, {
                       className: cn(
-                        'h-4 w-4',
+                        'h-3 w-3',
                         statusConfig[task.status].color
                       ),
                     })
@@ -393,7 +399,7 @@ export function TaskManagement({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full space-y-4">
       {!readOnly && !isProjectCompleted && (
         <>
           <Form {...taskForm}>
@@ -424,7 +430,7 @@ export function TaskManagement({
                           <Button
                             variant={'outline'}
                             className={cn(
-                              'w-[200px] pl-3 text-left font-normal',
+                              'w-[180px] pl-3 text-left font-normal',
                               !field.value && 'text-muted-foreground'
                             )}
                           >
@@ -468,57 +474,60 @@ export function TaskManagement({
         </>
       )}
 
-      <div className="grid grid-cols-2 gap-6 items-start">
-        <ScrollArea className="space-y-2 h-[500px] w-full pr-4">
-            {parentTasks.length > 0 ? (
-                parentTasks.map((task) => (
-                <div key={task.id} className="space-y-2">
-                    {renderTask(task, false)}
-                    {showSubtaskInput === task.id && !readOnly && !isProjectCompleted && (
-                         <Form {...subtaskForm}>
-                            <form onSubmit={subtaskForm.handleSubmit(values => handleSubtaskSubmit(values, task.id))} className="ml-8 flex items-center gap-2">
-                                <CornerDownRight className="h-5 w-5 text-muted-foreground" />
-                                <FormField
-                                    control={subtaskForm.control}
-                                    name="title"
-                                    render={({ field }) => (
-                                    <FormItem className="flex-grow">
-                                        <FormControl>
-                                        <Input placeholder="Add a new subtask..." {...field} autoFocus />
-                                        </FormControl>
-                                        <FormMessage />
-                                    </FormItem>
-                                    )}
-                                />
-                                <Button type="submit" disabled={isLoading} size="icon">
-                                    {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                                    <span className="sr-only">Add Subtask</span>
-                                </Button>
-                            </form>
-                        </Form>
-                    )}
-                    {task.subtasks?.map((subtask) => renderTask(subtask, true))}
-                </div>
-                ))
-            ) : (
-                <div className="flex h-full flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 bg-muted/50 p-12 text-center">
+      <div className="flex-1 grid grid-cols-2 gap-6 items-start min-h-[400px]">
+        <div className="flex flex-col h-full space-y-2 rounded-lg border p-2">
+           {parentTasks.length === 0 && !isLoading && (
+                 <div className="flex h-full flex-col items-center justify-center rounded-lg bg-muted/50 p-12 text-center">
                     <MessageCircle className="mx-auto h-12 w-12 text-muted-foreground" />
                     <h3 className="mt-4 text-lg font-semibold">
                         {readOnly ? 'No tasks yet' : 'No tasks created yet'}
                     </h3>
-                    <p className="mb-4 mt-2 text-base md:text-sm text-muted-foreground">
+                    <p className="mb-4 mt-2 text-sm text-muted-foreground">
                         {readOnly
                         ? 'The student has not created any tasks.'
                         : 'Add your first task to get started.'}
                     </p>
                 </div>
             )}
-        </ScrollArea>
-        <div className="rounded-lg border h-[32rem]">
+            <ScrollArea className="flex-1 w-full">
+                <div className="space-y-2 p-2">
+                    {parentTasks.map((task) => (
+                    <div key={task.id} className="space-y-2">
+                        {renderTask(task, false)}
+                        {showSubtaskInput === task.id && !readOnly && !isProjectCompleted && (
+                            <Form {...subtaskForm}>
+                                <form onSubmit={subtaskForm.handleSubmit(values => handleSubtaskSubmit(values, task.id))} className="ml-12 flex items-center gap-2">
+                                    <CornerDownRight className="h-5 w-5 text-muted-foreground" />
+                                    <FormField
+                                        control={subtaskForm.control}
+                                        name="title"
+                                        render={({ field }) => (
+                                        <FormItem className="flex-grow">
+                                            <FormControl>
+                                            <Input placeholder="Add a new subtask..." {...field} autoFocus />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                        )}
+                                    />
+                                    <Button type="submit" disabled={isLoading} size="icon">
+                                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                                        <span className="sr-only">Add Subtask</span>
+                                    </Button>
+                                </form>
+                            </Form>
+                        )}
+                        {task.subtasks?.map((subtask) => renderTask(subtask, true))}
+                    </div>
+                    ))}
+                 </div>
+            </ScrollArea>
+        </div>
+        <div className="rounded-lg border h-full flex flex-col">
             {selectedTask ? (
-                <div className="flex flex-col h-full">
+                <>
                     <div className="p-4 border-b">
-                        <h4 className="font-semibold">{selectedTask.title}</h4>
+                        <h4 className="font-semibold line-clamp-1">{selectedTask.title}</h4>
                         <p className="text-sm text-muted-foreground">Comments and activity</p>
                     </div>
                     <ScrollArea className="flex-1 p-4">
@@ -570,7 +579,7 @@ export function TaskManagement({
                             </Form>
                         </div>
                     )}
-                </div>
+                </>
             ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center p-8">
                      <MessageCircle className="h-16 w-16 text-muted-foreground/50" />
