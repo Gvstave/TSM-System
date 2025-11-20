@@ -10,7 +10,7 @@ import {
   SidebarProvider,
   SidebarMenuButton,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Home } from 'lucide-react';
+import { LayoutDashboard } from 'lucide-react';
 import { Logo } from './logo';
 import { usePathname } from 'next/navigation';
 import { SidebarUserProfile } from './sidebar-user-profile';
@@ -27,12 +27,6 @@ export function MainSidebar() {
         </SidebarHeader>
         <SidebarContent>
           <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton href="/home" isActive={pathname === '/home'}>
-                <Home />
-                Home
-              </SidebarMenuButton>
-            </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton
                 href="/dashboard"
