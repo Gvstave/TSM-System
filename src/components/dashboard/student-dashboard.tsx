@@ -12,7 +12,6 @@ import type { Project, User } from '@/lib/types';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectCard } from './project-card';
 import { WelcomeHeader } from './welcome-header';
-import { AiStudentPrioritizer } from './ai-student-prioritizer';
 import { Loader2 } from 'lucide-react';
 
 interface StudentDashboardProps {
@@ -114,7 +113,7 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
         user={currentUser}
         actionSlot={
           <div className="w-full md:w-auto">
-            <AiStudentPrioritizer projects={projects} />
+            {/* Placeholder for future actions */}
           </div>
         }
       />

@@ -6,9 +6,6 @@ import {
   query,
   where,
   onSnapshot,
-  writeBatch,
-  getDocs,
-  doc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Project, User } from '@/lib/types';
@@ -16,7 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectCard } from './project-card';
 import { WelcomeHeader } from './welcome-header';
 import { CreateProjectDialog } from './create-project-dialog';
-import { AiLecturerPrioritizer } from './ai-lecturer-prioritizer';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteProject } from '@/lib/actions';
@@ -123,7 +119,6 @@ export function LecturerDashboard({ currentUser }: LecturerDashboardProps) {
         user={currentUser}
         actionSlot={
           <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
-            <AiLecturerPrioritizer projects={projects} students={students} />
             <CreateProjectDialog
               lecturerId={currentUser.uid}
               students={students}
