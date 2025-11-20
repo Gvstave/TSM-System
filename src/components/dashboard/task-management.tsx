@@ -12,6 +12,7 @@ import {
   Timestamp,
   orderBy,
   where,
+  doc,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
@@ -82,7 +83,6 @@ const commentSchema = z.object({
 interface TaskManagementProps {
   project: Project;
   readOnly: boolean;
-  onProjectUpdate?: () => void;
   onTaskCreated?: () => void;
 }
 
@@ -98,7 +98,6 @@ const statusConfig: Record<
 export function TaskManagement({
   project,
   readOnly,
-  onProjectUpdate,
   onTaskCreated,
 }: TaskManagementProps) {
   const { user } = useAuth();
@@ -129,6 +128,7 @@ export function TaskManagement({
   });
 
   const fetchTasks = useCallback(() => {
+    if (!project) return;
     setIsLoading(true);
     const q = query(
       collection(db, 'tasks'),
@@ -146,11 +146,13 @@ export function TaskManagement({
       setIsLoading(false);
     });
     return unsubscribe;
-  }, [project.id]);
+  }, [project]);
 
   useEffect(() => {
     const unsubscribe = fetchTasks();
-    return () => unsubscribe();
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [fetchTasks]);
   
   useEffect(() => {
@@ -217,7 +219,7 @@ export function TaskManagement({
   }, [tasks]);
 
   async function onTaskSubmit(values: z.infer<typeof taskSchema>) {
-    if (!user || readOnly) return;
+    if (!user || readOnly || !project) return;
     setIsSubmittingTask(true);
 
     const result = await createTask({
@@ -234,9 +236,7 @@ export function TaskManagement({
         description: `"${values.title}" has been added.`,
       });
       taskForm.reset();
-      if (onTaskCreated) {
-        onTaskCreated();
-      }
+      if (onTaskCreated) onTaskCreated();
     } else {
       toast({
         variant: 'destructive',
@@ -248,7 +248,7 @@ export function TaskManagement({
   }
 
   async function handleSubtaskSubmit(values: z.infer<typeof subtaskSchema>, parentId: string) {
-    if (!user || readOnly) return;
+    if (!user || readOnly || !project) return;
     setIsSubmittingTask(true);
 
     const result = await createTask({
@@ -266,9 +266,6 @@ export function TaskManagement({
       });
       subtaskForm.reset();
       setShowSubtaskInput(null);
-      if (onTaskCreated) {
-        onTaskCreated();
-      }
     } else {
       toast({
         variant: 'destructive',
@@ -323,7 +320,7 @@ export function TaskManagement({
   };
 
   const handleProjectSubmit = async () => {
-    if (!user || readOnly) return;
+    if (!user || readOnly || !project) return;
     setIsSubmitting(true);
     const result = await updateProjectStatus(project.id, 'Completed', user.uid);
     if (result.success) {
@@ -332,7 +329,6 @@ export function TaskManagement({
         description:
           'Your project has been marked as completed and sent for review.',
       });
-      if(onProjectUpdate) onProjectUpdate();
     } else {
       toast({
         variant: 'destructive',
@@ -421,6 +417,14 @@ export function TaskManagement({
       </CardContent>
     </Card>
   );
+
+  if (!project) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col space-y-4">

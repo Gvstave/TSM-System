@@ -208,7 +208,7 @@ export function ProjectCard({
         <DialogHeader>
           <DialogTitle>{project.title}</DialogTitle>
         </DialogHeader>
-        <TaskManagement project={project} readOnly={userRole === 'lecturer'} onTaskCreated={onProjectUpdate} onProjectUpdate={onProjectUpdate} />
+        <TaskManagement project={project} readOnly={userRole === 'lecturer'} />
       </DialogContent>
 
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
