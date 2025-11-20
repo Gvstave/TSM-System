@@ -6,6 +6,7 @@ export type User = {
   name: string;
   email: string;
   role: 'student' | 'lecturer';
+  image?: string;
   lecturerId?: string; // Optional, only for students
 };
 
@@ -46,3 +47,13 @@ export type Task = {
     parentId?: string;
     subtasks?: Task[];
 }
+
+export type Comment = {
+    id: string;
+    taskId: string;
+    userId: string;
+    userName: string;
+    userImage?: string;
+    text: string;
+    createdAt: Timestamp;
+};

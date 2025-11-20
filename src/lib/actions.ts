@@ -16,7 +16,7 @@ import {
   writeBatch,
   deleteDoc,
 } from 'firebase/firestore';
-import type { Project, Task, ProjectStatus, AssignedStudent } from './types';
+import type { Project, Task, ProjectStatus, AssignedStudent, Comment } from './types';
 
 // The input for the server action must be a plain object.
 // The deadline is passed as an ISO string.
@@ -174,4 +174,25 @@ export async function updateTaskStatus(
   } catch (error: any) {
     return { success: false, error: error.message };
   }
+}
+
+type CommentInputAction = {
+    taskId: string;
+    userId: string;
+    userName: string;
+    userImage?: string;
+    text: string;
+};
+
+export async function addCommentToTask(commentInput: CommentInputAction) {
+    try {
+        await addDoc(collection(db, 'comments'), {
+            ...commentInput,
+            createdAt: serverTimestamp(),
+        });
+        revalidatePath('/dashboard');
+        return { success: true };
+    } catch (error: any) {
+        return { success: false, error: error.message };
+    }
 }

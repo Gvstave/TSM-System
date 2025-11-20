@@ -5,11 +5,11 @@ import { useState, useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { collection, query, where, onSnapshot, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, Timestamp, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useAuth } from '@/context/auth-context';
-import type { Project, Task, TaskStatus } from '@/lib/types';
-import { createTask, updateTaskStatus, updateProjectStatus } from '@/lib/actions';
+import type { Project, Task, TaskStatus, Comment } from '@/lib/types';
+import { createTask, updateTaskStatus, updateProjectStatus, addCommentToTask } from '@/lib/actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -27,15 +27,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Plus, Loader2, Circle, CircleDot, CircleCheck, Send, CalendarIcon, CornerDownRight, MessageSquarePlus } from 'lucide-react';
+import { Plus, Loader2, Circle, CircleDot, CircleCheck, Send, CalendarIcon, CornerDownRight, MessageSquarePlus, MessageCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Separator } from '../ui/separator';
 import { DialogFooter } from '../ui/dialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 import { Calendar } from '../ui/calendar';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { ScrollArea } from '../ui/scroll-area';
 
 const taskSchema = z.object({
   title: z.string().min(3, 'Task title must be at least 3 characters.'),
@@ -44,6 +46,10 @@ const taskSchema = z.object({
 
 const subtaskSchema = z.object({
     title: z.string().min(3, 'Subtask title must be at least 3 characters.')
+});
+
+const commentSchema = z.object({
+    text: z.string().min(1, 'Comment cannot be empty.'),
 });
 
 interface TaskManagementProps {
@@ -66,13 +72,16 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
   const { user } = useAuth();
   const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSubtaskInput, setShowSubtaskInput] = useState<string | null>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isCommenting, setIsCommenting] = useState(false);
 
 
-  const form = useForm<z.infer<typeof taskSchema>>({
+  const taskForm = useForm<z.infer<typeof taskSchema>>({
     resolver: zodResolver(taskSchema),
     defaultValues: { title: '', dueDate: undefined },
   });
@@ -80,6 +89,11 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
   const subtaskForm = useForm<z.infer<typeof subtaskSchema>>({
     resolver: zodResolver(subtaskSchema),
     defaultValues: { title: '' },
+  });
+  
+  const commentForm = useForm<z.infer<typeof commentSchema>>({
+    resolver: zodResolver(commentSchema),
+    defaultValues: { text: '' },
   });
 
   useEffect(() => {
@@ -90,6 +104,24 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
     });
     return () => unsubscribe();
   }, [project.id]);
+
+  useEffect(() => {
+    if (selectedTask) {
+        const q = query(
+            collection(db, 'comments'),
+            where('taskId', '==', selectedTask.id),
+            orderBy('createdAt', 'asc')
+        );
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const fetchedComments = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Comment));
+            setComments(fetchedComments);
+        });
+        return () => unsubscribe();
+    } else {
+        setComments([]);
+    }
+  }, [selectedTask]);
+
 
   const { parentTasks, allTasksCompleted } = useMemo(() => {
     const parentTasksMap = new Map<string, Task>();
@@ -119,7 +151,7 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
   }, [tasks]);
 
 
-  async function onSubmit(values: z.infer<typeof taskSchema>) {
+  async function onTaskSubmit(values: z.infer<typeof taskSchema>) {
     if (!user || readOnly) return;
     setIsLoading(true);
 
@@ -133,7 +165,7 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
 
     if (result.success) {
       toast({ title: 'Task Added', description: `"${values.title}" has been added.` });
-      form.reset();
+      taskForm.reset();
        if (result.updatedProjectStatus) {
         onTaskCreated?.();
       }
@@ -163,6 +195,26 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
       toast({ variant: 'destructive', title: 'Error', description: result.error });
     }
     setIsLoading(false);
+  }
+
+  async function onCommentSubmit(values: z.infer<typeof commentSchema>) {
+    if (!user || !selectedTask) return;
+    setIsCommenting(true);
+
+    const result = await addCommentToTask({
+        taskId: selectedTask.id,
+        userId: user.uid,
+        userName: user.name,
+        userImage: user.image,
+        text: values.text,
+    });
+
+    if (result.success) {
+        commentForm.reset();
+    } else {
+        toast({ variant: 'destructive', title: 'Error', description: "Could not post comment." });
+    }
+    setIsCommenting(false);
   }
 
 
@@ -207,11 +259,19 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
   const isProjectCompleted = project.status === 'Completed';
 
   const renderTask = (task: Task, isSubtask: boolean) => (
-     <Card key={task.id} className={cn(isSubtask && "ml-8")}>
+     <Card 
+        key={task.id} 
+        className={cn(
+            "cursor-pointer transition-all hover:bg-muted/50",
+            isSubtask && "ml-8",
+            selectedTask?.id === task.id && "bg-muted border-primary"
+        )}
+        onClick={() => setSelectedTask(task)}
+    >
         <CardContent className="p-3 flex items-center justify-between gap-4">
         <div className="flex-grow flex items-center gap-2">
             {isSubtask && <CornerDownRight className="h-4 w-4 text-muted-foreground" />}
-            <p>{task.title}</p>
+            <p className="flex-grow">{task.title}</p>
             {task.dueDate && (
                 <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <CalendarIcon className="h-3 w-3" />
@@ -224,7 +284,7 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
                  <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setShowSubtaskInput(current => current === task.id ? null : task.id)}>
+                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); setShowSubtaskInput(current => current === task.id ? null : task.id)}}>
                                 <MessageSquarePlus className="h-4 w-4" />
                             </Button>
                         </TooltipTrigger>
@@ -239,7 +299,7 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
                 onValueChange={(newStatus: TaskStatus) => handleStatusChange(task.id, newStatus)}
                 disabled={isUpdating === task.id || readOnly || isProjectCompleted}
             >
-                <SelectTrigger className="w-[150px] flex-shrink-0">
+                <SelectTrigger className="w-[150px] flex-shrink-0" onClick={e => e.stopPropagation()}>
                     <SelectValue>
                         <div className="flex items-center gap-2">
                             {isUpdating === task.id ? (
@@ -274,140 +334,212 @@ export function TaskManagement({ project, readOnly, onTaskCreated }: TaskManagem
   )
 
   return (
-    <div className="space-y-4">
-      {!readOnly && !isProjectCompleted && (
-        <>
-            <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start gap-2">
-                    <FormField
-                        control={form.control}
-                        name="title"
-                        render={({ field }) => (
-                        <FormItem className="flex-grow">
-                            <FormControl>
-                            <Input placeholder="Add a new task..." {...field} />
-                            </FormControl>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={form.control}
-                        name="dueDate"
-                        render={({ field }) => (
-                            <FormItem>
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                    <FormControl>
-                                        <Button
-                                            variant={'outline'}
-                                            className={cn(
-                                                'w-[150px] pl-3 text-left font-normal',
-                                                !field.value && 'text-muted-foreground'
-                                            )}
-                                            >
-                                            {field.value ? (
-                                                format(field.value, 'MMM d')
-                                            ) : (
-                                                <span>Set due date</span>
-                                            )}
-                                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                        </Button>
-                                    </FormControl>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-auto p-0" align="start">
-                                    <Calendar
-                                        mode="single"
-                                        selected={field.value}
-                                        onSelect={field.onChange}
-                                        disabled={(date) => date < new Date() || date > (project.deadline as Timestamp).toDate()}
-                                        initialFocus
-                                    />
-                                    </PopoverContent>
-                                </Popover>
-                                <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                    <Button type="submit" disabled={isLoading} size="icon">
-                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                        <span className="sr-only">Add Task</span>
-                    </Button>
-                </form>
-            </Form>
-            <Separator />
-        </>
-      )}
-      
-      <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
-        {parentTasks.length > 0 ? (
-          parentTasks.map(task => (
-            <div key={task.id} className="space-y-2">
-                {renderTask(task, false)}
-                {showSubtaskInput === task.id && !readOnly && !isProjectCompleted && (
-                    <Form {...subtaskForm}>
-                        <form onSubmit={subtaskForm.handleSubmit((values) => handleSubtaskSubmit(values, task.id))} className="ml-8 flex items-center gap-2">
-                             <FormField
-                                control={subtaskForm.control}
+    <div className="grid md:grid-cols-2 gap-6">
+        <div className="space-y-4">
+            {!readOnly && !isProjectCompleted && (
+                <>
+                    <Form {...taskForm}>
+                        <form onSubmit={taskForm.handleSubmit(onTaskSubmit)} className="flex items-start gap-2">
+                            <FormField
+                                control={taskForm.control}
                                 name="title"
                                 render={({ field }) => (
                                 <FormItem className="flex-grow">
                                     <FormControl>
-                                    <Input placeholder="Add a new subtask..." {...field} autoFocus />
+                                    <Input placeholder="Add a new task..." {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>
                                 )}
                             />
-                             <Button type="submit" disabled={isLoading} size="icon">
+                            <FormField
+                                control={taskForm.control}
+                                name="dueDate"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <Popover>
+                                            <PopoverTrigger asChild>
+                                            <FormControl>
+                                                <Button
+                                                    variant={'outline'}
+                                                    className={cn(
+                                                        'w-[150px] pl-3 text-left font-normal',
+                                                        !field.value && 'text-muted-foreground'
+                                                    )}
+                                                    >
+                                                    {field.value ? (
+                                                        format(field.value, 'MMM d')
+                                                    ) : (
+                                                        <span>Set due date</span>
+                                                    )}
+                                                    <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                                </Button>
+                                            </FormControl>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-auto p-0" align="start">
+                                            <Calendar
+                                                mode="single"
+                                                selected={field.value}
+                                                onSelect={field.onChange}
+                                                disabled={(date) => date < new Date() || date > (project.deadline as Timestamp).toDate()}
+                                                initialFocus
+                                            />
+                                            </PopoverContent>
+                                        </Popover>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <Button type="submit" disabled={isLoading} size="icon">
                                 {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                                <span className="sr-only">Add Subtask</span>
+                                <span className="sr-only">Add Task</span>
                             </Button>
                         </form>
                     </Form>
-                )}
-                {task.subtasks?.map(subtask => renderTask(subtask, true))}
-            </div>
-          ))
-        ) : (
-          <p className="text-sm text-muted-foreground text-center py-4">
-            {readOnly ? 'The student has not created any tasks for this project yet.' : 'No tasks created yet. Add your first task above.'}
-          </p>
-        )}
-      </div>
-
-       {!readOnly && !isProjectCompleted && (
-        <>
-            <Separator />
-            <DialogFooter className="pt-4">
-                 <TooltipProvider>
-                    <Tooltip delayDuration={0}>
-                        <TooltipTrigger asChild>
-                            <div tabIndex={0} className={cn(!allTasksCompleted ? 'cursor-not-allowed' : '')}>
-                                <Button
-                                    onClick={handleProjectSubmit}
-                                    disabled={!allTasksCompleted || isSubmitting}
-                                    className="w-full md:w-auto"
-                                >
-                                    {isSubmitting ? (
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Send className="mr-2 h-4 w-4" />
-                                    )}
-                                    Submit Project
-                                </Button>
-                             </div>
-                        </TooltipTrigger>
-                        {!allTasksCompleted && (
-                            <TooltipContent>
-                                <p>All tasks must be completed before you can submit.</p>
-                            </TooltipContent>
+                    <Separator />
+                </>
+            )}
+            
+            <ScrollArea className="h-96 pr-4">
+                <div className="space-y-2">
+                {parentTasks.length > 0 ? (
+                parentTasks.map(task => (
+                    <div key={task.id} className="space-y-2">
+                        {renderTask(task, false)}
+                        {showSubtaskInput === task.id && !readOnly && !isProjectCompleted && (
+                            <Form {...subtaskForm}>
+                                <form onSubmit={subtaskForm.handleSubmit((values) => handleSubtaskSubmit(values, task.id))} className="ml-8 flex items-center gap-2">
+                                    <FormField
+                                        control={subtaskForm.control}
+                                        name="title"
+                                        render={({ field }) => (
+                                        <FormItem className="flex-grow">
+                                            <FormControl>
+                                            <Input placeholder="Add a new subtask..." {...field} autoFocus />
+                                            </FormControl>
+                                            <FormMessage />
+                                        </FormItem>
+                                        )}
+                                    />
+                                    <Button type="submit" disabled={isLoading} size="icon">
+                                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                                        <span className="sr-only">Add Subtask</span>
+                                    </Button>
+                                </form>
+                            </Form>
                         )}
-                    </Tooltip>
-                </TooltipProvider>
-            </DialogFooter>
-        </>
-      )}
+                        {task.subtasks?.map(subtask => renderTask(subtask, true))}
+                    </div>
+                ))
+                ) : (
+                <div className="flex h-64 flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 p-12 text-center">
+                    <MessageCircle className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h3 className="mt-4 text-lg font-semibold">
+                    {readOnly ? 'No tasks yet' : 'No tasks created yet'}
+                    </h3>
+                    <p className="mb-4 mt-2 text-sm text-muted-foreground">
+                    {readOnly ? 'The student has not created any tasks.' : 'Add your first task to get started.'}
+                    </p>
+                </div>
+                )}
+                </div>
+            </ScrollArea>
+            {!readOnly && !isProjectCompleted && (
+                <>
+                    <DialogFooter className="pt-4">
+                        <TooltipProvider>
+                            <Tooltip delayDuration={0}>
+                                <TooltipTrigger asChild>
+                                    <div tabIndex={0} className={cn(!allTasksCompleted ? 'cursor-not-allowed' : '')}>
+                                        <Button
+                                            onClick={handleProjectSubmit}
+                                            disabled={!allTasksCompleted || isSubmitting}
+                                            className="w-full md:w-auto"
+                                        >
+                                            {isSubmitting ? (
+                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Send className="mr-2 h-4 w-4" />
+                                            )}
+                                            Submit Project
+                                        </Button>
+                                    </div>
+                                </TooltipTrigger>
+                                {!allTasksCompleted && (
+                                    <TooltipContent>
+                                        <p>All tasks must be completed before you can submit.</p>
+                                    </TooltipContent>
+                                )}
+                            </Tooltip>
+                        </TooltipProvider>
+                    </DialogFooter>
+                </>
+            )}
+        </div>
+        <div className="flex flex-col rounded-lg border h-[32rem]">
+            {selectedTask ? (
+                <>
+                <div className="p-4 border-b">
+                    <h4 className="font-semibold">{selectedTask.title}</h4>
+                    <p className="text-sm text-muted-foreground">Comments and activity</p>
+                </div>
+                <ScrollArea className="flex-1 p-4">
+                    <div className="space-y-4">
+                        {comments.length > 0 ? (
+                            comments.map(comment => (
+                                <div key={comment.id} className="flex items-start gap-3">
+                                    <Avatar className="h-8 w-8">
+                                        <AvatarImage src={comment.userImage} />
+                                        <AvatarFallback>{comment.userName.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <p className="font-semibold text-sm">{comment.userName}</p>
+                                            <p className="text-xs text-muted-foreground">
+                                                {formatDistanceToNow((comment.createdAt as Timestamp).toDate(), { addSuffix: true })}
+                                            </p>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">{comment.text}</p>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                             <p className="text-sm text-muted-foreground text-center py-8">No comments on this task yet.</p>
+                        )}
+                    </div>
+                </ScrollArea>
+                {!isProjectCompleted && (
+                    <div className="p-4 border-t bg-muted/50">
+                        <Form {...commentForm}>
+                            <form onSubmit={commentForm.handleSubmit(onCommentSubmit)} className="flex items-center gap-2">
+                                <FormField
+                                    control={commentForm.control}
+                                    name="text"
+                                    render={({ field }) => (
+                                    <FormItem className="flex-grow">
+                                        <FormControl>
+                                        <Input placeholder="Add a comment..." {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                    )}
+                                />
+                                <Button type="submit" disabled={isCommenting}>
+                                    {isCommenting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Comment
+                                </Button>
+                            </form>
+                        </Form>
+                    </div>
+                )}
+                </>
+            ) : (
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
+                    <MessageCircle className="h-12 w-12 text-muted-foreground/50" />
+                    <p className="mt-4 text-sm font-medium text-muted-foreground">Select a task to view comments</p>
+                </div>
+            )}
+        </div>
     </div>
   );
 }

@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/context/auth-context';
 import { auth } from '@/lib/firebase';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export function UserNav() {
   const { user } = useAuth();
@@ -27,8 +26,6 @@ export function UserNav() {
     await signOut(auth);
     router.push('/login');
   };
-  
-  const userAvatar = PlaceHolderImages[0];
 
   return (
     <DropdownMenu>
@@ -38,7 +35,7 @@ export function UserNav() {
           className="relative h-10 w-full justify-start gap-2 px-2"
         >
           <Avatar className="h-8 w-8">
-            <AvatarImage src={userAvatar.imageUrl} alt={user?.name || ''} data-ai-hint={userAvatar.imageHint} />
+            <AvatarImage src={user?.image} alt={user?.name || ''} />
             <AvatarFallback>
               {user?.name
                 ?.split(' ')
