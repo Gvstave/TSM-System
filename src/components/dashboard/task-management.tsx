@@ -53,7 +53,6 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Separator } from '../ui/separator';
 import { DialogFooter } from '../ui/dialog';
 import {
   Tooltip,
@@ -83,7 +82,7 @@ const commentSchema = z.object({
 interface TaskManagementProps {
   project: Project;
   readOnly: boolean;
-  onTaskCreated?: () => void;
+  onProjectUpdate?: () => void;
 }
 
 const statusConfig: Record<
@@ -98,13 +97,14 @@ const statusConfig: Record<
 export function TaskManagement({
   project,
   readOnly,
-  onTaskCreated,
+  onProjectUpdate,
 }: TaskManagementProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSubmittingTask, setIsSubmittingTask] = useState(false);
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSubtaskInput, setShowSubtaskInput] = useState<string | null>(null);
@@ -216,7 +216,7 @@ export function TaskManagement({
 
   async function onTaskSubmit(values: z.infer<typeof taskSchema>) {
     if (!user || readOnly) return;
-    setIsLoading(true);
+    setIsSubmittingTask(true);
 
     const result = await createTask({
       projectId: project.id,
@@ -232,8 +232,8 @@ export function TaskManagement({
         description: `"${values.title}" has been added.`,
       });
       taskForm.reset();
-      if (result.updatedProjectStatus) {
-        onTaskCreated?.();
+      if (result.updatedProjectStatus && onProjectUpdate) {
+        onProjectUpdate();
       }
     } else {
       toast({
@@ -242,12 +242,12 @@ export function TaskManagement({
         description: result.error,
       });
     }
-    setIsLoading(false);
+    setIsSubmittingTask(false);
   }
 
   async function handleSubtaskSubmit(values: z.infer<typeof subtaskSchema>, parentId: string) {
     if (!user || readOnly) return;
-    setIsLoading(true);
+    setIsSubmittingTask(true);
 
     const result = await createTask({
       projectId: project.id,
@@ -264,8 +264,8 @@ export function TaskManagement({
       });
       subtaskForm.reset();
       setShowSubtaskInput(null);
-      if (result.updatedProjectStatus) {
-        onTaskCreated?.();
+      if (result.updatedProjectStatus && onProjectUpdate) {
+        onProjectUpdate();
       }
     } else {
       toast({
@@ -274,7 +274,7 @@ export function TaskManagement({
         description: result.error,
       });
     }
-    setIsLoading(false);
+    setIsSubmittingTask(false);
   }
 
 
@@ -481,8 +481,8 @@ export function TaskManagement({
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
+              <Button type="submit" disabled={isSubmittingTask}>
+                {isSubmittingTask ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <Plus className="mr-2 h-4 w-4" />
@@ -539,8 +539,8 @@ export function TaskManagement({
                                                 </FormItem>
                                                 )}
                                             />
-                                            <Button type="submit" disabled={isLoading} size="sm" className="h-7">
-                                                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                                            <Button type="submit" disabled={isSubmittingTask} size="sm" className="h-7">
+                                                {isSubmittingTask ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                                                 <span className="sr-only">Add Subtask</span>
                                             </Button>
                                         </form>

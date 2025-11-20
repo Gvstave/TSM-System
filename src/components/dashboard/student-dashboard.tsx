@@ -72,7 +72,7 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
       if (unsubscribeProjects) unsubscribeProjects();
       unsubscribeStudents();
     };
-  }, [currentUser, fetchProjects]);
+  }, [fetchProjects]);
   
   const filteredProjects = projects.filter(project =>
     project.title.toLowerCase().includes(searchTerm.toLowerCase())
