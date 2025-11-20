@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ProjectCard } from './project-card';
 import { WelcomeHeader } from './welcome-header';
 import { Loader2 } from 'lucide-react';
-import { ProjectSearch } from './project-search';
+import { Input } from '@/components/ui/input';
 
 
 interface StudentDashboardProps {
@@ -119,7 +119,11 @@ export function StudentDashboard({ currentUser }: StudentDashboardProps) {
     <div className="flex-1 space-y-4 p-4 pt-6 md:p-8">
       <WelcomeHeader
         user={currentUser}
-        actionSlot={<ProjectSearch onSearch={setSearchTerm} />}
+        actionSlot={<Input 
+            placeholder="Search projects..." 
+            className="w-full md:w-64"
+            onChange={(e) => setSearchTerm(e.target.value)}
+         />}
       />
       <Tabs defaultValue="all" className="space-y-4">
         <TabsList className="grid w-full grid-cols-2 sm:w-auto sm:inline-flex md:grid-cols-4">

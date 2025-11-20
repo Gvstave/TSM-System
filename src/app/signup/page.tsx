@@ -1,4 +1,3 @@
-
 'use client';
 import { AuthForm } from '@/components/auth/auth-form';
 import { useAuth } from '@/context/auth-context';
@@ -23,13 +22,17 @@ function SignupPageContent() {
       </div>
     );
   }
-  return <AuthForm type="signup" />;
+  return (
+    <main className="flex min-h-screen w-full items-center justify-center bg-background p-4">
+      <AuthForm type="signup" />
+    </main>
+  );
 }
 
 export default function SignupPage() {
-    return (
-        <Suspense>
-            <SignupPageContent />
-        </Suspense>
-    )
+  return (
+    <Suspense>
+      <SignupPageContent />
+    </Suspense>
+  );
 }

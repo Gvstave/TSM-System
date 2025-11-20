@@ -16,7 +16,7 @@ import { CreateProjectDialog } from './create-project-dialog';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { deleteProject } from '@/lib/actions';
-import { ProjectSearch } from './project-search';
+import { Input } from '@/components/ui/input';
 
 interface LecturerDashboardProps {
   currentUser: User;
@@ -126,7 +126,11 @@ export function LecturerDashboard({ currentUser }: LecturerDashboardProps) {
         user={currentUser}
         actionSlot={
           <div className="flex w-full flex-col gap-2 md:w-auto md:flex-row">
-             <ProjectSearch onSearch={setSearchTerm} />
+             <Input 
+                placeholder="Search projects..." 
+                className="w-full md:w-64"
+                onChange={(e) => setSearchTerm(e.target.value)}
+             />
             <CreateProjectDialog
               lecturerId={currentUser.uid}
               students={students}
