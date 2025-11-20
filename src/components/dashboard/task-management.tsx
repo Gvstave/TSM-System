@@ -337,7 +337,7 @@ export function TaskManagement({
           )}
           <p className="flex-1 truncate font-medium text-sm">{task.title}</p>
         </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-1 flex-shrink-0">
           {task.dueDate && (
             <div className="flex items-center gap-1 text-xs text-muted-foreground">
               <CalendarIcon className="h-3 w-3" />
@@ -418,7 +418,7 @@ export function TaskManagement({
   );
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 flex flex-col h-full">
       {!readOnly && !isProjectCompleted && (
         <>
           <Form {...taskForm}>
@@ -492,8 +492,8 @@ export function TaskManagement({
           <Separator />
         </>
       )}
-      <div className="flex space-x-6">
-        <div className="w-1/2 flex flex-col min-h-[400px]">
+      <div className="flex flex-1 space-x-6 overflow-hidden">
+        <div className="w-3/5 flex flex-col">
           <ScrollArea className="flex-grow rounded-md border p-4">
             <div className="space-y-2">
               {parentTasks.length > 0 ? (
@@ -560,7 +560,7 @@ export function TaskManagement({
             </div>
           </ScrollArea>
         </div>
-        <div className="w-1/2 flex flex-col rounded-lg border">
+        <div className="w-2/5 flex flex-col rounded-lg border">
           {selectedTask ? (
             <>
               <div className="p-4 border-b">
