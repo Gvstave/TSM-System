@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { format } from 'date-fns';
-import { Calendar as CalendarIcon, Loader2, Plus, Check, ChevronsUpDown } from 'lucide-react';
+import { Calendar as CalendarIcon, Loader2, Plus, Check, ChevronsUpDown, Sparkles } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -39,12 +39,16 @@ import type { User } from '@/lib/types';
 import { createProject } from '@/lib/actions';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { Badge } from '@/components/ui/badge';
+import { breakdownProject } from '@/ai/flows/breakdown-flow';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
 
 const projectSchema = z.object({
   title: z.string().min(3, { message: 'Title must be at least 3 characters.' }),
   description: z.string().min(10, { message: 'Description must be at least 10 characters.' }),
   deadline: z.date({ required_error: 'A deadline is required.' }),
   assignedTo: z.array(z.string()).min(1, 'Please assign this project to at least one student.'),
+  tasks: z.array(z.string()).optional(),
 });
 
 type FormValues = z.infer<typeof projectSchema>;
@@ -57,6 +61,8 @@ interface CreateProjectDialogProps {
 export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialogProps) {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [suggestedTasks, setSuggestedTasks] = useState<string[]>([]);
   const { toast } = useToast();
 
   const form = useForm<FormValues>({
@@ -65,8 +71,45 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
       title: '',
       description: '',
       assignedTo: [],
+      tasks: [],
     },
   });
+
+  const handleGenerateTasks = async () => {
+    const title = form.getValues('title');
+    const description = form.getValues('description');
+    
+    if (!title || !description) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing Information',
+        description: 'Please enter a title and description before generating tasks.',
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    setSuggestedTasks([]);
+    form.setValue('tasks', []);
+
+    try {
+      const result = await breakdownProject({ title, description });
+      if (result.tasks) {
+        setSuggestedTasks(result.tasks);
+        // Pre-select all suggested tasks
+        form.setValue('tasks', result.tasks);
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'AI Error',
+        description: 'Could not generate task suggestions.',
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
 
   async function onSubmit(values: FormValues) {
     setIsLoading(true);
@@ -83,6 +126,7 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
         description: `"${values.title}" has been assigned.`,
       });
       form.reset();
+      setSuggestedTasks([]);
       setOpen(false);
     } else {
       toast({
@@ -142,6 +186,76 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
                 </FormItem>
               )}
             />
+
+            <div className="flex justify-end">
+              <Button type="button" variant="outline" size="sm" onClick={handleGenerateTasks} disabled={isGenerating}>
+                {isGenerating ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
+                )}
+                Generate AI Task Suggestions
+              </Button>
+            </div>
+
+            {(isGenerating || suggestedTasks.length > 0) && (
+              <div className="space-y-4 rounded-md border p-4">
+                <h4 className="text-sm font-medium">AI Task Suggestions</h4>
+                {isGenerating ? (
+                   <div className="space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Generating...</span>
+                    </div>
+                  </div>
+                ) : (
+                  <FormField
+                    control={form.control}
+                    name="tasks"
+                    render={() => (
+                      <FormItem className="space-y-2">
+                        {suggestedTasks.map((taskTitle) => (
+                          <FormField
+                            key={taskTitle}
+                            control={form.control}
+                            name="tasks"
+                            render={({ field }) => {
+                              return (
+                                <FormItem
+                                  key={taskTitle}
+                                  className="flex flex-row items-start space-x-3 space-y-0"
+                                >
+                                  <FormControl>
+                                    <Checkbox
+                                      checked={field.value?.includes(taskTitle)}
+                                      onCheckedChange={(checked) => {
+                                        return checked
+                                          ? field.onChange([...(field.value || []), taskTitle])
+                                          : field.onChange(
+                                              field.value?.filter(
+                                                (value) => value !== taskTitle
+                                              )
+                                            );
+                                      }}
+                                    />
+                                  </FormControl>
+                                  <FormLabel className="font-normal">
+                                    {taskTitle}
+                                  </FormLabel>
+                                </FormItem>
+                              );
+                            }}
+                          />
+                        ))}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+            )}
+             <Separator />
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
              <FormField
                 control={form.control}
                 name="assignedTo"
@@ -259,8 +373,10 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
                 </FormItem>
               )}
             />
+             </div>
+
             <DialogFooter>
-              <Button type="submit" disabled={isLoading}>
+              <Button type="submit" disabled={isLoading || isGenerating}>
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create Project
               </Button>

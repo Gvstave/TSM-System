@@ -26,22 +26,45 @@ type ProjectInputAction = {
   deadline: string; // ISO string
   assignedTo: string[]; // Array of student UIDs
   createdBy: string;
+  tasks?: string[]; // Optional array of task titles
 };
 
 export async function createProject(projectInput: ProjectInputAction) {
   try {
-    const { deadline, ...restOfProject } = projectInput;
+    const { deadline, tasks, ...restOfProject } = projectInput;
 
-    // Convert the ISO string back to a Firestore Timestamp on the server.
+    const batch = writeBatch(db);
+
+    // 1. Create the project
+    const projectRef = doc(collection(db, 'projects'));
     const deadlineTimestamp = Timestamp.fromDate(new Date(deadline));
 
-    await addDoc(collection(db, 'projects'), {
+    batch.set(projectRef, {
       ...restOfProject,
       deadline: deadlineTimestamp,
       status: 'Pending',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
+
+    // 2. If there are tasks, create them
+    if (tasks && tasks.length > 0) {
+      for (const taskTitle of tasks) {
+        const taskRef = doc(collection(db, 'tasks'));
+        batch.set(taskRef, {
+          projectId: projectRef.id,
+          title: taskTitle,
+          status: 'Pending',
+          createdBy: projectInput.createdBy, // The lecturer is creating these initial tasks
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
+       // If tasks are being added, the project is immediately "In Progress"
+       batch.update(projectRef, { status: 'In Progress' });
+    }
+
+    await batch.commit();
 
     revalidatePath('/dashboard');
     return { success: true };
