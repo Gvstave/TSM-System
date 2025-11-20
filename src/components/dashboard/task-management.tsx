@@ -141,26 +141,31 @@ export function TaskManagement({
           (a, b) => a.createdAt.toMillis() - b.createdAt.toMillis()
       );
       setTasks(sortedTasks);
-      
-      // If a task was selected, keep it selected, otherwise select the first one
-      if (selectedTask) {
-        const updatedSelectedTask = sortedTasks.find(t => t.id === selectedTask.id);
-        setSelectedTask(updatedSelectedTask || (sortedTasks.length > 0 ? sortedTasks[0] : null));
-      } else if (sortedTasks.length > 0) {
-        setSelectedTask(sortedTasks[0]);
-      } else {
-        setSelectedTask(null);
-      }
-
       setIsLoading(false);
     });
     return unsubscribe;
-  }, [project.id, selectedTask]);
+  }, [project.id]);
 
   useEffect(() => {
     const unsubscribe = fetchTasks();
     return () => unsubscribe();
-  }, [project.id]);
+  }, [fetchTasks]);
+
+  useEffect(() => {
+    // This effect handles setting the selected task when the tasks list changes.
+    // It's separate from fetching to avoid dependency loops.
+    if (!selectedTask && tasks.length > 0) {
+      // If nothing is selected, select the first task.
+      setSelectedTask(tasks[0]);
+    } else if (selectedTask) {
+      // If a task is selected, check if it still exists in the updated list.
+      const updatedSelectedTask = tasks.find(t => t.id === selectedTask.id);
+      if (!updatedSelectedTask) {
+        // If the selected task was deleted, select the new first task or null.
+        setSelectedTask(tasks.length > 0 ? tasks[0] : null);
+      }
+    }
+  }, [tasks, selectedTask]);
 
   useEffect(() => {
     if (selectedTask) {
@@ -231,7 +236,7 @@ export function TaskManagement({
       if (result.updatedProjectStatus) {
         onTaskCreated?.();
       }
-      fetchTasks();
+      // fetchTasks() is not needed here, onSnapshot will trigger a refresh
     } else {
       toast({
         variant: 'destructive',
@@ -261,7 +266,6 @@ export function TaskManagement({
       });
       subtaskForm.reset();
       setShowSubtaskInput(null);
-      fetchTasks();
     } else {
       toast({
         variant: 'destructive',
@@ -306,7 +310,6 @@ export function TaskManagement({
         title: 'Status Updated',
         description: `Task status changed to "${newStatus}".`,
       });
-      fetchTasks();
     } else {
       toast({
         variant: 'destructive',
@@ -344,17 +347,17 @@ export function TaskManagement({
         key={task.id}
         className={cn(
             "w-full cursor-pointer transition-colors", 
-            isSubtask && "ml-12",
-            selectedTask?.id === task.id ? "bg-muted/80" : "bg-card hover:bg-muted/50"
+            isSubtask && "ml-10",
+            selectedTask?.id === task.id ? "bg-muted border-primary" : "bg-card hover:bg-muted/50"
         )}
         onClick={() => setSelectedTask(task)}
     >
-      <CardContent className="flex items-center justify-between p-3">
+      <CardContent className="flex items-center justify-between p-2.5">
         <p className="flex-1 font-medium text-sm line-clamp-1">{task.title}</p>
         <div className="flex items-center gap-2">
             {task.dueDate && (
-                <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <CalendarIcon className="h-4 w-4" />
+                <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <CalendarIcon className="h-3.5 w-3.5" />
                     <span>{format((task.dueDate as Timestamp).toDate(), 'MMM d')}</span>
                 </div>
             )}
@@ -362,8 +365,8 @@ export function TaskManagement({
                  <TooltipProvider>
                     <Tooltip>
                         <TooltipTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setShowSubtaskInput(current => current === task.id ? null : task.id)}}>
-                                <MessageSquarePlus className="h-4 w-4" />
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setShowSubtaskInput(current => current === task.id ? null : task.id)}}>
+                                <MessageSquarePlus className="h-3.5 w-3.5" />
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -495,8 +498,8 @@ export function TaskManagement({
         </>
       )}
 
-      <div className="flex flex-1 flex-col space-y-4 md:flex-row md:space-x-6 md:space-y-0">
-        <div className="flex w-full flex-col space-y-2 md:w-3/5">
+      <div className="flex-1 flex flex-col md:flex-row md:space-x-6 md:space-y-0 min-h-[400px]">
+        <div className="flex flex-col space-y-2 md:w-3/5">
            {parentTasks.length === 0 && !isLoading && (
                  <div className="flex h-full flex-col items-center justify-center rounded-lg border bg-muted/50 p-12 text-center">
                     <MessageCircle className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -508,6 +511,11 @@ export function TaskManagement({
                         ? 'The student has not created any tasks.'
                         : 'Add your first task or use the AI generator to get started.'}
                     </p>
+                </div>
+            )}
+            {isLoading && parentTasks.length === 0 && (
+                <div className="flex justify-center items-center h-full">
+                    <Loader2 className="h-8 w-8 animate-spin" />
                 </div>
             )}
             <ScrollArea className="flex-1 w-full rounded-md border">
@@ -544,7 +552,7 @@ export function TaskManagement({
                  </div>
             </ScrollArea>
         </div>
-        <div className="flex h-full w-full flex-col rounded-lg border md:w-2/5">
+        <div className="flex h-full flex-col rounded-lg border md:w-2/5 mt-4 md:mt-0">
             {selectedTask ? (
                 <>
                     <div className="p-4 border-b">
