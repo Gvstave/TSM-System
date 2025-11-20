@@ -333,9 +333,9 @@ export function TaskManagement({
       <CardContent className="p-2 flex items-center justify-between gap-2">
         <div className="flex-1 flex items-center gap-2 min-w-0">
           {isSubtask && (
-            <CornerDownRight className="h-4 w-4 text-muted-foreground flex-shrink-0 ml-1" />
+            <CornerDownRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
           )}
-          <p className="flex-1 truncate font-medium">{task.title}</p>
+          <p className="flex-1 truncate font-medium text-sm">{task.title}</p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           {task.dueDate && (
@@ -353,7 +353,7 @@ export function TaskManagement({
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8"
+                    className="h-7 w-7"
                     onClick={(e) => {
                       e.stopPropagation();
                       setShowSubtaskInput(
@@ -378,17 +378,17 @@ export function TaskManagement({
             disabled={isUpdating === task.id || readOnly || isProjectCompleted}
           >
             <SelectTrigger
-              className="w-[150px] flex-shrink-0"
+              className="w-[150px] flex-shrink-0 h-8 text-xs"
               onClick={(e) => e.stopPropagation()}
             >
               <SelectValue>
                 <div className="flex items-center gap-2">
                   {isUpdating === task.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
                     React.createElement(statusConfig[task.status].icon, {
                       className: cn(
-                        'h-4 w-4',
+                        'h-3 w-3',
                         statusConfig[task.status].color
                       ),
                     })
