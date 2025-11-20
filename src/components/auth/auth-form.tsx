@@ -159,11 +159,9 @@ export function AuthForm({ type }: AuthFormProps) {
 
   return (
     <Card className="w-full max-w-sm">
-      <CardHeader className="items-center text-center">
-        <Logo className="mb-4" />
-        <CardTitle className="font-headline text-2xl">
-          {isLogin ? 'Welcome Back' : 'Create an Account'}
-        </CardTitle>
+      <CardHeader className="text-center">
+        <Logo className="mx-auto mb-4" />
+        <CardTitle>{isLogin ? 'Welcome Back' : 'Create an Account'}</CardTitle>
         <CardDescription>
           {isLogin
             ? 'Sign in to access your dashboard.'
@@ -280,15 +278,15 @@ export function AuthForm({ type }: AuthFormProps) {
             </Button>
           </form>
         </Form>
-        <div className="mt-4 text-center text-sm">
-          {isLogin ? "Don't have an account?" : 'Already have an account?'}
+        <p className="mt-4 text-center text-sm">
+          {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
           <Link
             href={isLogin ? '/signup' : '/login'}
-            className="ml-1 underline"
+            className="font-medium text-primary hover:underline"
           >
-            {isLogin ? 'Sign Up' : 'Sign In'}
+            {isLogin ? 'Sign up' : 'Sign in'}
           </Link>
-        </div>
+        </p>
       </CardContent>
     </Card>
   );

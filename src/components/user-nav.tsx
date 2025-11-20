@@ -30,11 +30,8 @@ export function UserNav() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          className="relative h-10 w-full justify-start gap-2 px-2"
-        >
-          <Avatar className="h-8 w-8">
+        <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+          <Avatar className="h-10 w-10">
             <AvatarImage src={user?.image} alt={user?.name || ''} />
             <AvatarFallback>
               {user?.name
@@ -43,10 +40,6 @@ export function UserNav() {
                 .join('')}
             </AvatarFallback>
           </Avatar>
-          <div className="flex flex-col items-start overflow-hidden">
-            <span className="truncate text-sm font-medium">{user?.name}</span>
-            <span className="w-[150px] truncate text-xs text-muted-foreground">{user?.email}</span>
-          </div>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>

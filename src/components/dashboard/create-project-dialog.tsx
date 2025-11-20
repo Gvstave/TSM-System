@@ -99,14 +99,14 @@ export function CreateProjectDialog({ lecturerId, students }: CreateProjectDialo
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full md:w-auto whitespace-nowrap">
+        <Button>
           <Plus className="-ml-1 mr-2 h-4 w-4" />
           Create Project
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="font-headline">Create New Project</DialogTitle>
+          <DialogTitle>Create New Project</DialogTitle>
           <DialogDescription>
             Fill in the details below to assign a new project to one or more students.
           </DialogDescription>

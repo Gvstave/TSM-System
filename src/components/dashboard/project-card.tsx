@@ -16,7 +16,6 @@ import {
   CircleCheck,
   CircleDot,
   Clock,
-  GraduationCap,
   MoreVertical,
   Trash2,
   Users,
@@ -51,7 +50,6 @@ import {
   AlertDialogTitle,
 } from '../ui/alert-dialog';
 import { useState } from 'react';
-import { GradeProjectDialog } from './grade-project-dialog';
 
 interface ProjectCardProps {
   project: Project;
@@ -79,7 +77,6 @@ export function ProjectCard({
 }: ProjectCardProps) {
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [isTaskDialogOpen, setTaskDialogOpen] = useState(false);
-  const [isGradeDialogOpen, setGradeDialogOpen] = useState(false);
 
   const getDeadlineDate = (deadline: Project['deadline']): Date => {
     if (deadline instanceof Timestamp) {
@@ -130,7 +127,7 @@ export function ProjectCard({
           <CardTitle className="font-headline text-lg tracking-tight line-clamp-2">
             {project.title}
           </CardTitle>
-          <CardDescription className="h-[60px] line-clamp-3">
+          <CardDescription className="line-clamp-3">
             {project.description}
           </CardDescription>
         </div>
@@ -146,15 +143,6 @@ export function ProjectCard({
                 <View className="mr-2 h-4 w-4" />
                 View Progress
               </DropdownMenuItem>
-              {project.status === 'Completed' && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={() => setGradeDialogOpen(true)}>
-                    <GraduationCap className="mr-2 h-4 w-4" />
-                    Grade Project
-                  </DropdownMenuItem>
-                </>
-              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive focus:bg-destructive/10 focus:text-destructive"
@@ -176,7 +164,7 @@ export function ProjectCard({
           )}
           <span>{deadlineText}</span>
         </div>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center">
           <Badge
             variant="outline"
             className="flex items-center gap-2 text-sm"
@@ -186,11 +174,6 @@ export function ProjectCard({
             />
             {project.status}
           </Badge>
-          {(project.grade || project.grade === 0) && (
-            <Badge variant={project.grade < 50 ? 'destructive' : 'secondary'} className="font-semibold">
-              Grade: {project.grade}%
-            </Badge>
-          )}
         </div>
       </CardContent>
       <CardFooter className="flex-col items-start gap-2">
@@ -212,30 +195,15 @@ export function ProjectCard({
   );
 
   return (
-    <>
+    <Dialog open={isTaskDialogOpen} onOpenChange={setTaskDialogOpen}>
       {cardContent}
-      
-      {/* Task Management Dialog */}
-      <Dialog open={isTaskDialogOpen} onOpenChange={setTaskDialogOpen}>
-        <DialogContent className="max-w-4xl h-[90vh]">
-          <DialogHeader>
-            <DialogTitle className="font-headline">{project.title} - Tasks</DialogTitle>
-            <p className="text-sm text-muted-foreground">
-              {userRole === 'lecturer' ? `Viewing tasks for ${assignedToNames}.` : 'Break down your project into smaller tasks.'}
-            </p>
-          </DialogHeader>
-          <TaskManagement project={project} readOnly={userRole === 'lecturer'} onTaskCreated={onProjectUpdate} />
-        </DialogContent>
-      </Dialog>
+      <DialogContent className="max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>{project.title}</DialogTitle>
+        </DialogHeader>
+        <TaskManagement project={project} readOnly={userRole === 'lecturer'} onTaskCreated={onProjectUpdate} />
+      </DialogContent>
 
-      {/* Grade Project Dialog */}
-      {userRole === 'lecturer' && (
-        <Dialog open={isGradeDialogOpen} onOpenChange={setGradeDialogOpen}>
-          <GradeProjectDialog project={project} students={students} closeDialog={() => setGradeDialogOpen(false)} />
-        </Dialog>
-      )}
-
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -261,6 +229,6 @@ export function ProjectCard({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </Dialog>
   );
 }

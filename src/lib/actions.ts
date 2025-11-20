@@ -196,37 +196,3 @@ export async function addCommentToTask(commentInput: CommentInputAction) {
         return { success: false, error: error.message };
     }
 }
-
-type GradeProjectAction = {
-    projectId: string;
-    grade: number;
-    feedback: string;
-    userId: string;
-};
-
-export async function gradeProject(gradeInput: GradeProjectAction) {
-    try {
-        const projectRef = doc(db, 'projects', gradeInput.projectId);
-        const projectSnap = await getDoc(projectRef);
-
-        if (!projectSnap.exists()) {
-            throw new Error('Project not found.');
-        }
-
-        const projectData = projectSnap.data() as Project;
-        if (projectData.createdBy !== gradeInput.userId) {
-            throw new Error('Only the lecturer who created the project can grade it.');
-        }
-
-        await updateDoc(projectRef, {
-            grade: gradeInput.grade,
-            feedback: gradeInput.feedback,
-            updatedAt: serverTimestamp(),
-        });
-
-        revalidatePath('/dashboard');
-        return { success: true };
-    } catch (error: any) {
-        return { success: false, error: error.message };
-    }
-}

@@ -28,8 +28,6 @@ export type Project = {
   status: ProjectStatus;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  grade?: number;
-  feedback?: string;
 };
 
 export const TaskStatusSchema = z.enum(['Pending', 'In Progress', 'Completed']);
@@ -44,7 +42,6 @@ export type Task = {
     createdAt: Timestamp;
     updatedAt: Timestamp;
     dueDate?: Timestamp;
-    grade?: number;
     parentId?: string;
     subtasks?: Task[];
 }
