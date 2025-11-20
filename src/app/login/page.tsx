@@ -2,18 +2,20 @@
 import { AuthForm } from '@/components/auth/auth-form';
 import { useAuth } from '@/context/auth-context';
 import { Loader2 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect } from 'react';
 
 function LoginPageContent() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUrl = searchParams.get('redirect') || '/dashboard';
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace('/dashboard');
+      router.replace(redirectUrl);
     }
-  }, [user, loading, router]);
+  }, [user, loading, router, redirectUrl]);
 
   if (loading || user) {
     return (
